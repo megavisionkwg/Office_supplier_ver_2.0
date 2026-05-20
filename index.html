@@ -6,7 +6,7 @@
     <title>Supplies Office System</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; padding: 20px; color: #333; }
-        .container { max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .container { max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
         h2 { text-align: center; color: #007bff; margin-top: 0; margin-bottom: 20px; }
         .page { display: none; }
         .active { display: block; }
@@ -21,9 +21,17 @@
         .autocomplete-suggestions { position: absolute; border: 1px solid #ccc; background: white; width: 100%; z-index: 99; max-height: 150px; overflow-y: auto; display: none; border-radius: 0 0 5px 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f1f1; text-align: left; }
         .suggestion-item:hover { background: #007bff; color: white; }
-        .loader { text-align: center; display: none; padding: 20px; font-weight: bold; color: #555; }
         .user-info-banner { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: 500; }
         
+        /* CSS ANIMASI LINGKARAN MUTAR-MUTAR (SPINNER LOADER) */
+        .loader-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); border-radius: 10px; z-index: 999; flex-direction: column; justify-content: center; align-items: center; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        .loader-text { font-weight: bold; color: #555; font-size: 15px; text-align: center; }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* Style Halaman Sukses */
         .success-box { text-align: center; padding: 20px 10px; }
         .success-icon { font-size: 60px; color: #28a745; margin-bottom: 15px; }
@@ -36,7 +44,10 @@
 <body>
 
 <div class="container">
-    <div id="loader" class="loader">⏳ Memproses data ke server, mohon tunggu...</div>
+    <div id="loaderOverlay" class="loader-overlay">
+        <div class="spinner"></div>
+        <div class="loader-text">Memproses data ke server...<br>Mohon tunggu sebentar</div>
+    </div>
 
     <div id="pageLogin" class="page active">
         <h2>Supplies Office - Login</h2>
@@ -130,14 +141,13 @@
 </div>
 
 <script>
-    // MASUKKAN URL NEW DEPLOYMENT LU DI SINI
-    const URL_API = "https://script.google.com/macros/s/AKfycbxYlLwNQsRsIe1DVQ8lQ2UcAq0rDClDNc08ClovEIGI8M7_54b-pbTEepIA9wlqc-MP/exec";
+    // URL API Google Apps Script Terakhir Lu
+    const URL_API = "https://script.google.com/macros/s/AKfycbz5Mb2xYO9YJh1BgvCqxXMVfzOlStm08D5ScU2svmL8s7N9mtphYKVjkjC5LDCDmVa-/exec";
 
     let databaseBarang = [];
     let databaseSO = [];
     let userAktif = null;
 
-    // Hanya muat data lokasi SO di awal agar tidak membebani koneksi browser
     window.addEventListener('DOMContentLoaded', async () => {
         await muatUlangSO();
     });
@@ -147,8 +157,9 @@
         document.getElementById(pageId).classList.add('active');
     }
 
+    // Fungsi Toggle Loader Baru (Fleksibel Flexbox)
     function toggleLoader(show) {
-        document.getElementById('loader').style.display = show ? 'block' : 'none';
+        document.getElementById('loaderOverlay').style.display = show ? 'flex' : 'none';
     }
 
     async function muatUlangSO() {
@@ -156,7 +167,7 @@
             let res = await fetch(`${URL_API}?target=lokasi`);
             let txt = await res.text();
             databaseSO = JSON.parse(txt);
-            console.log("Database SO Sinkron:", databaseSO);
+            console.log("Database SO Sinkron.");
         } catch(e) { console.error("Gagal sinkronisasi data SO:", e); }
     }
 
@@ -167,7 +178,6 @@
         if(databaseSO.length === 0) { muatUlangSO(); }
     }
 
-    // AUTOCOMPLETE SO (TOLERAN HURUF KECIL/BESAR)
     function cariLokasiSO(val) {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
@@ -191,7 +201,6 @@
         } else { div.style.display = "none"; }
     }
 
-    // FUNGSI SIGN UP
     async function prosesSignUp() {
         const nama = document.getElementById('regNama').value.trim();
         let lokasiInput = document.getElementById('regLokasi').value.trim();
@@ -200,9 +209,7 @@
 
         if(!nama || !lokasiInput || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
         
-        if (!lokasiInput.toUpperCase().startsWith("SO ")) {
-            lokasiInput = "SO " + lokasiInput;
-        }
+        if (!lokasiInput.toUpperCase().startsWith("SO ")) { lokasiInput = "SO " + lokasiInput; }
         
         let validSO = databaseSO.find(item => item.toLowerCase().trim() === lokasiInput.toLowerCase());
         if(!validSO) return alert("Lokasi SO tidak terdaftar! Gunakan rekomendasi yang muncul.");
@@ -223,14 +230,11 @@
                 document.getElementById('regEmail').value = "";
                 document.getElementById('regSandi').value = "";
                 pindahPage('pageLogin');
-            } else {
-                alert(data.message);
-            }
+            } else { alert(data.message); }
         } catch(e) { alert("Gagal mendaftar, periksa koneksi."); }
         toggleLoader(false);
     }
 
-    // FUNGSI LOGIN (KEMBALI KE SERVER - AMAN & AKURAT)
     async function prosesLogin() {
         const email = document.getElementById('loginEmail').value.trim();
         const sandi = document.getElementById('loginSandi').value.trim();
@@ -258,12 +262,8 @@
                 
                 await muatDataBarang();
                 pindahPage('pageUtama');
-            } else {
-                alert(data.message);
-            }
-        } catch(e) { 
-            alert("Gagal masuk. Periksa kembali jaringan Anda."); 
-        }
+            } else { alert(data.message); }
+        } catch(e) { alert("Gagal masuk. Periksa kembali jaringan Anda."); }
         toggleLoader(false);
     }
 
@@ -330,7 +330,7 @@
                 document.getElementById('formSatuan').value = "";
                 document.getElementById('formAlasan').value = "";
                 
-                // MASUK KE PAGE BERHASIL SESUAI REQUEST
+                // Menuju Halaman Sukses
                 pindahPage('pageSukses');
             }
         } catch(e) { alert("Gagal mengirim laporan."); }

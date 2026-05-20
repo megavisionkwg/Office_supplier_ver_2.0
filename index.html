@@ -76,16 +76,13 @@
         <h2>Supplies Office - Tahap 2</h2>
         
         <div class="form-group">
-            <label>Kategori Barang</label>
-            <select id="kategoriSelect">
-                <option value="" disabled selected>-- Pilih Kategori Barang --</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
             <label>Nama Barang</label>
             <input type="text" id="namaBarang" oninput="cariNamaBarang(this.value)" placeholder="Ketik nama barang (contoh: Kertas, Pulpen)..." autocomplete="off">
             <div id="barangSuggestions" class="autocomplete-suggestions"></div>
+        </div>
+        <div class="form-group">
+            <label>Kategori Barang</label>
+            <input type="text" id="kategoriBarang" readonly placeholder="Otomatis terisi ketika barang dipilih">
         </div>
         <div class="form-group">
             <label>Quantity (Qty)</label>
@@ -210,38 +207,41 @@
         document.getElementById('soSuggestions').style.display = "none";
     }
 
-    function cariNamaBarang(val) {
-        let div = document.getElementById('barangSuggestions');
-        div.innerHTML = "";
-        if (!val.trim()) { div.style.display = "none"; return; }
+function cariNamaBarang(val) {
+    let div = document.getElementById('barangSuggestions');
+    div.innerHTML = "";
+    if (!val.trim()) { div.style.display = "none"; return; }
 
-        let hasil = dataAsetGoogle.filter(item => {
-            return item["Nama Item"] && item["Nama Item"].toLowerCase().includes(val.toLowerCase());
+    let hasil = dataAsetGoogle.filter(item => {
+        return item["Nama Item"] && item["Nama Item"].toLowerCase().includes(val.toLowerCase());
+    });
+
+    if (hasil.length > 0) {
+        div.style.display = "block";
+        hasil.forEach(item => {
+            let cleanNama = item["Nama Item"].replace(/'/g, "\\'");
+            let cleanUnit = (item["Unit"] || "").replace(/'/g, "\\'");
+            let cleanKode = (item["Kode Item"] || "").replace(/'/g, "\\'");
+            // Ambil Asset Code sebagai kategori (kolom B / indeks 1 dari Apps Script)
+            let cleanKategori = (item["Asset Code"] || "").replace(/'/g, "\\'"); 
+            
+            div.innerHTML += `
+                <div class="suggestion-item" onclick="pilihBarang('${cleanNama}', '${cleanUnit}', '${cleanKode}', '${cleanKategori}')">
+                    <strong>${item["Nama Item"]}</strong> <span style="color:#777; font-size:12px;">— Kat: ${item["Asset Code"] || '-'} (Kode: ${item["Kode Item"] || '-'})</span>
+                </div>`;
         });
-
-        if (hasil.length > 0) {
-            div.style.display = "block";
-            hasil.forEach(item => {
-                let cleanNama = item["Nama Item"].replace(/'/g, "\\'");
-                let cleanUnit = (item["Unit"] || "").replace(/'/g, "\\'");
-                let cleanKode = (item["Kode Item"] || "").replace(/'/g, "\\'");
-                
-                div.innerHTML += `
-                    <div class="suggestion-item" onclick="pilihBarang('${cleanNama}', '${cleanUnit}', '${cleanKode}')">
-                        <strong>${item["Nama Item"]}</strong> <span style="color:#777; font-size:12px;">— Unit: ${item["Unit"] || '-'} (Kode: ${item["Kode Item"] || '-'})</span>
-                    </div>`;
-            });
-        } else {
-            div.style.display = "none";
-        }
+    } else {
+        div.style.display = "none";
     }
+}
 
-    function pilihBarang(nama, unit, kode) {
-        document.getElementById('namaBarang').value = nama;
-        document.getElementById('satuanBarang').value = unit; 
-        document.getElementById('kodeBarang').value = kode; // 👈 Isi otomatis kode barang dari rekomendasi
-        document.getElementById('barangSuggestions').style.display = "none";
-    }
+    function pilihBarang(nama, unit, kode, kategori) {
+    document.getElementById('namaBarang').value = nama;
+    document.getElementById('satuanBarang').value = unit; 
+    document.getElementById('kodeBarang').value = kode; 
+    document.getElementById('kategoriBarang').value = kategori; // 👈 Otomatis ngisi Kategori Barang
+    document.getElementById('barangSuggestions').style.display = "none";
+}
 
     function pindahKePage2() {
         const nama = document.getElementById('namaKaryawan').value.trim();
@@ -271,17 +271,17 @@
         window.scrollTo(0, 0);
     }
 function kirimFormulir() {
-    let katTerpilih = document.getElementById('kategoriSelect').value;
+    let katTerpilih = document.getElementById('kategoriBarang').value; // 👈 Ambil dari input text otomatis
     let satTerpilih = document.getElementById('satuanBarang').value;
     let kodeTerpilih = document.getElementById('kodeBarang').value;
     let namaBarangInput = document.getElementById('namaBarang').value.trim();
 
-    if(!katTerpilih) {
-        alert("Harap pilih Kategori Barang terlebih dahulu!");
-        return;
-    }
     if(!namaBarangInput) {
         alert("Nama Barang tidak boleh kosong!");
+        return;
+    }
+    if(!katTerpilih) {
+        alert("Kategori gagal dimuat, pastikan Anda memilih barang dari rekomendasi!");
         return;
     }
 
@@ -304,11 +304,9 @@ function kirimFormulir() {
         alasan: document.getElementById("alasan").value
     };
 
-    // Tampilkan screen loading memproses formulir
     document.getElementById('page2').classList.remove('active');
     document.getElementById('page3').classList.add('active');
 
-    // Trik kirim data lintas 2 spreadsheet bypass CORS Google
     fetch(urlAppsScriptPusat, {
         method: "POST",
         headers: {
@@ -317,13 +315,12 @@ function kirimFormulir() {
         body: JSON.stringify(formPayload)
     })
     .then(res => {
-        // Jika respon berhasil masuk
         alert("BERHASIL! Data telah masuk ke Spreadsheet 2 (Log Permintaan).");
         location.reload();
     })
     .catch(err => {
         console.error(err);
-        alert("Terjadi kendala koneksi, mohon cek kembali Spreadsheet 2 Anda.");
+        alert("Terjadi kendala koneksi saat menyimpan data.");
         document.getElementById('page3').classList.remove('active');
         document.getElementById('page2').classList.add('active');
     });

@@ -115,40 +115,27 @@
 </div>
 
 <script>
-    // URL Web App Script Anda
-    const urlAppsScriptPusat = "https://script.google.com/macros/s/AKfycby0aK86MPIblEea5rxBUHeA7m5Nxvu-Ip8Vz054MP3lI2apYvLyBzvZMS3lvqyX7s_9/exec"; 
+    // URL Web App Script Anda (Pastikan deploy versi baru dulu)
+    const urlAppsScriptPusat = "https://script.google.com/macros/s/AKfycbyS1cfVZ9H-3WaYWUCf8fLgDBA56k7u60pCGddshSITrJQPK7TOeJTp7uBw-9wSmEcG/exec"; 
 
     let dataAsetGoogle = [];
     let dbLokasiSO = [];
-    let dbKategori = [];
 
-    // FITUR OPTIMASI SPEED: Menggunakan Caching LocalStorage agar muat berkali-kali lipat lebih instan
     async function muatSemuaDatabase() {
         try {
-            // Cek apakah ada cache data sebelumnya agar langsung dirender tanpa nunggu download
             if (localStorage.getItem('dbLokasiSO')) dbLokasiSO = JSON.parse(localStorage.getItem('dbLokasiSO'));
-            if (localStorage.getItem('dbKategori')) {
-                dbKategori = JSON.parse(localStorage.getItem('dbKategori'));
-                renderKategoriDropdown();
-            }
             if (localStorage.getItem('dataAsetGoogle')) dataAsetGoogle = JSON.parse(localStorage.getItem('dataAsetGoogle'));
 
-            if (dbLokasiSO.length > 0 && dbKategori.length > 0 && dataAsetGoogle.length > 0) {
+            if (dbLokasiSO.length > 0 && dataAsetGoogle.length > 0) {
                 document.getElementById('statusDb').innerHTML = "✅ Database Terhubung (Cached) & Siap.";
                 document.getElementById('statusDb').style.color = "#28a745";
             } else {
                 document.getElementById('statusDb').innerHTML = "⏳ Sedang mengunduh database...";
             }
             
-            // Ambil data terbaru di latar belakang (Background Sync) agar tidak mengganggu user
             let resLokasi = await fetch(`${urlAppsScriptPusat}?target=lokasi`);
             dbLokasiSO = await resLokasi.json();
             localStorage.setItem('dbLokasiSO', JSON.stringify(dbLokasiSO));
-
-            let resKategori = await fetch(`${urlAppsScriptPusat}?target=kategori`);
-            dbKategori = await resKategori.json();
-            localStorage.setItem('dbKategori', JSON.stringify(dbKategori));
-            renderKategoriDropdown();
 
             let resBarang = await fetch(`${urlAppsScriptPusat}?target=barang`);
             dataAsetGoogle = await resBarang.json();
@@ -157,7 +144,7 @@
             document.getElementById('statusDb').innerHTML = "✅ Database Terhubung & Siap Digunakan.";
             document.getElementById('statusDb').style.color = "#28a745";
         } catch (error) {
-            console.error("Gagal sinkronisasi data terbaru, menggunakan data lokal:", error);
+            console.error("Gagal sinkronisasi data terbaru:", error);
             if (dataAsetGoogle.length > 0) {
                 document.getElementById('statusDb').innerHTML = "⚠️ Menggunakan database offline.";
                 document.getElementById('statusDb').style.color = "#ffc107";
@@ -166,14 +153,6 @@
                 document.getElementById('statusDb').style.color = "#dc3545";
             }
         }
-    }
-
-    function renderKategoriDropdown() {
-        const selectEl = document.getElementById('kategoriSelect');
-        selectEl.innerHTML = '<option value="" disabled selected>-- Pilih Kategori Barang --</option>';
-        dbKategori.forEach(kat => {
-            selectEl.innerHTML += `<option value="${kat}">${kat}</option>`;
-        });
     }
 
     window.onload = function() {
@@ -207,41 +186,40 @@
         document.getElementById('soSuggestions').style.display = "none";
     }
 
-function cariNamaBarang(val) {
-    let div = document.getElementById('barangSuggestions');
-    div.innerHTML = "";
-    if (!val.trim()) { div.style.display = "none"; return; }
+    function cariNamaBarang(val) {
+        let div = document.getElementById('barangSuggestions');
+        div.innerHTML = "";
+        if (!val.trim()) { div.style.display = "none"; return; }
 
-    let hasil = dataAsetGoogle.filter(item => {
-        return item["Nama Item"] && item["Nama Item"].toLowerCase().includes(val.toLowerCase());
-    });
-
-    if (hasil.length > 0) {
-        div.style.display = "block";
-        hasil.forEach(item => {
-            let cleanNama = item["Nama Item"].replace(/'/g, "\\'");
-            let cleanUnit = (item["Unit"] || "").replace(/'/g, "\\'");
-            let cleanKode = (item["Kode Item"] || "").replace(/'/g, "\\'");
-            // Ambil Asset Code sebagai kategori (kolom B / indeks 1 dari Apps Script)
-            let cleanKategori = (item["Asset Code"] || "").replace(/'/g, "\\'"); 
-            
-            div.innerHTML += `
-                <div class="suggestion-item" onclick="pilihBarang('${cleanNama}', '${cleanUnit}', '${cleanKode}', '${cleanKategori}')">
-                    <strong>${item["Nama Item"]}</strong> <span style="color:#777; font-size:12px;">— Kat: ${item["Asset Code"] || '-'} (Kode: ${item["Kode Item"] || '-'})</span>
-                </div>`;
+        let hasil = dataAsetGoogle.filter(item => {
+            return item["Nama Item"] && item["Nama Item"].toLowerCase().includes(val.toLowerCase());
         });
-    } else {
-        div.style.display = "none";
+
+        if (hasil.length > 0) {
+            div.style.display = "block";
+            hasil.forEach(item => {
+                let cleanNama = item["Nama Item"].replace(/'/g, "\\'");
+                let cleanUnit = (item["Unit"] || "").replace(/'/g, "\\'");
+                let cleanKode = (item["Kode Item"] || "").replace(/'/g, "\\'");
+                let cleanKategori = (item["Asset Code"] || "").replace(/'/g, "\\'"); 
+                
+                div.innerHTML += `
+                    <div class="suggestion-item" onclick="pilihBarang('${cleanNama}', '${cleanUnit}', '${cleanKode}', '${cleanKategori}')">
+                        <strong>${item["Nama Item"]}</strong> <span style="color:#777; font-size:12px;">— Kat: ${item["Asset Code"] || '-'} (Unit: ${item["Unit"] || '-'})</span>
+                    </div>`;
+            });
+        } else {
+            div.style.display = "none";
+        }
     }
-}
 
     function pilihBarang(nama, unit, kode, kategori) {
-    document.getElementById('namaBarang').value = nama;
-    document.getElementById('satuanBarang').value = unit; 
-    document.getElementById('kodeBarang').value = kode; 
-    document.getElementById('kategoriBarang').value = kategori; // 👈 Otomatis ngisi Kategori Barang
-    document.getElementById('barangSuggestions').style.display = "none";
-}
+        document.getElementById('namaBarang').value = nama;
+        document.getElementById('satuanBarang').value = unit; 
+        document.getElementById('kodeBarang').value = kode; 
+        document.getElementById('kategoriBarang').value = kategori; // Mengisi otomatis Kategori dari Asset Code
+        document.getElementById('barangSuggestions').style.display = "none";
+    }
 
     function pindahKePage2() {
         const nama = document.getElementById('namaKaryawan').value.trim();
@@ -270,61 +248,62 @@ function cariNamaBarang(val) {
         document.getElementById('page1').classList.add('active');
         window.scrollTo(0, 0);
     }
-function kirimFormulir() {
-    let katTerpilih = document.getElementById('kategoriBarang').value; // 👈 Ambil dari input text otomatis
-    let satTerpilih = document.getElementById('satuanBarang').value;
-    let kodeTerpilih = document.getElementById('kodeBarang').value;
-    let namaBarangInput = document.getElementById('namaBarang').value.trim();
 
-    if(!namaBarangInput) {
-        alert("Nama Barang tidak boleh kosong!");
-        return;
+    function kirimFormulir() {
+        let katTerpilih = document.getElementById('kategoriBarang').value; 
+        let satTerpilih = document.getElementById('satuanBarang').value;
+        let kodeTerpilih = document.getElementById('kodeBarang').value;
+        let namaBarangInput = document.getElementById('namaBarang').value.trim();
+
+        if(!namaBarangInput) {
+            alert("Nama Barang tidak boleh kosong!");
+            return;
+        }
+        if(!katTerpilih) {
+            alert("Kategori gagal dimuat, silakan pilih ulang barang Anda dari rekomendasi!");
+            return;
+        }
+
+        let cocokBarang = dataAsetGoogle.find(item => item["Nama Item"].toLowerCase() === namaBarangInput.toLowerCase());
+        if (!cocokBarang) {
+            alert("Nama barang salah / tidak terdaftar di database!");
+            return;
+        }
+
+        var formPayload = {
+            namaKaryawan: document.getElementById("namaKaryawan").value,
+            idKaryawan: document.getElementById("idKaryawan").value,
+            lokasiSO: document.getElementById("lokasiSO").value,
+            tanggal: document.getElementById("tanggal").value,
+            kategoriBarang: katTerpilih,
+            kodeBarang: kodeTerpilih || "-", 
+            namaBarang: cocokBarang["Nama Item"],
+            qtyBarang: document.getElementById("qtyBarang").value,
+            satuanBarang: satTerpilih || "-",
+            alasan: document.getElementById("alasan").value
+        };
+
+        document.getElementById('page2').classList.remove('active');
+        document.getElementById('page3').classList.add('active');
+
+        fetch(urlAppsScriptPusat, {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify(formPayload)
+        })
+        .then(res => {
+            alert("BERHASIL! Data telah masuk ke Spreadsheet 2 (Log Permintaan).");
+            location.reload();
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Terjadi kendala koneksi saat menyimpan data.");
+            document.getElementById('page3').classList.remove('active');
+            document.getElementById('page2').classList.add('active');
+        });
     }
-    if(!katTerpilih) {
-        alert("Kategori gagal dimuat, pastikan Anda memilih barang dari rekomendasi!");
-        return;
-    }
-
-    let cocokBarang = dataAsetGoogle.find(item => item["Nama Item"].toLowerCase() === namaBarangInput.toLowerCase());
-    if (!cocokBarang) {
-        alert("Nama barang salah / tidak terdaftar di database!");
-        return;
-    }
-
-    var formPayload = {
-        namaKaryawan: document.getElementById("namaKaryawan").value,
-        idKaryawan: document.getElementById("idKaryawan").value,
-        lokasiSO: document.getElementById("lokasiSO").value,
-        tanggal: document.getElementById("tanggal").value,
-        kategoriBarang: katTerpilih,
-        kodeBarang: kodeTerpilih || "-", 
-        namaBarang: cocokBarang["Nama Item"],
-        qtyBarang: document.getElementById("qtyBarang").value,
-        satuanBarang: satTerpilih || "-",
-        alasan: document.getElementById("alasan").value
-    };
-
-    document.getElementById('page2').classList.remove('active');
-    document.getElementById('page3').classList.add('active');
-
-    fetch(urlAppsScriptPusat, {
-        method: "POST",
-        headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify(formPayload)
-    })
-    .then(res => {
-        alert("BERHASIL! Data telah masuk ke Spreadsheet 2 (Log Permintaan).");
-        location.reload();
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Terjadi kendala koneksi saat menyimpan data.");
-        document.getElementById('page3').classList.remove('active');
-        document.getElementById('page2').classList.add('active');
-    });
-}
 </script>
 </body>
 </html>

@@ -19,7 +19,7 @@
         button:hover { background: #0056b3; }
         .link-btn { text-align: center; margin-top: 15px; font-size: 14px; color: #007bff; cursor: pointer; text-decoration: underline; }
         .autocomplete-suggestions { position: absolute; border: 1px solid #ccc; background: white; width: 100%; z-index: 99; max-height: 150px; overflow-y: auto; display: none; border-radius: 0 0 5px 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f1f1; }
+        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f1f1; text-align: left; }
         .suggestion-item:hover { background: #007bff; color: white; }
         .loader { text-align: center; display: none; padding: 20px; font-weight: bold; color: #555; }
         .user-info-banner { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: 500; }
@@ -28,7 +28,7 @@
 <body>
 
 <div class="container">
-    <div id="loader" class="loader">⏳ Memproses ke server, mohon tunggu...</div>
+    <div id="loader" class="loader">⏳ Memproses data ke server, mohon tunggu...</div>
 
     <div id="pageLogin" class="page active">
         <h2>Supplies Office - Login</h2>
@@ -111,12 +111,21 @@
 </div>
 
 <script>
-    // 🚨 PASTE URL WEB APP APPS SCRIPT LU DI SINI
+    // URL API milik lu yang sudah valid
     const URL_API = "https://script.google.com/macros/s/AKfycbw3KvHmbEtmczYfM8NS64djGN_pbaMVnOkEn0JcjGPiRDOWNxEY4engtQ3CcHHJWsjG/exec";
 
     let databaseBarang = [];
     let databaseSO = [];
     let userAktif = null;
+
+    // Load Data Lokasi SO di background sejak web pertama kali dibuka biar gak nge-lag
+    window.addEventListener('DOMContentLoaded', async () => {
+        try {
+            let res = await fetch(`${URL_API}?target=lokasi`);
+            databaseSO = await res.json();
+            console.log("Database SO Berhasil Dimuat:", databaseSO);
+        } catch(e) { console.error("Gagal inisialisasi daftar lokasi SO", e); }
+    });
 
     function pindahPage(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -127,24 +136,28 @@
         document.getElementById('loader').style.display = show ? 'block' : 'none';
     }
 
-    // Ambil data rekomendasi SO pas halaman registrasi dibuka
-    async function bukaPageSignUp() {
+    function bukaPageSignUp() {
         pindahPage('pageSignUp');
-        if (databaseSO.length === 0) {
-            try {
-                let res = await fetch(`${URL_API}?target=lokasi`);
-                databaseSO = await res.json();
-            } catch(e) { console.error("Gagal memuat daftar lokasi SO", e); }
-        }
+        // Jika karena kendala jaringan data SO kosong, kita paksa tarik kembali
+        if (databaseSO.length === 0) { muatUlangSO(); }
     }
 
-    // AUTOCOMPLETE REKOMENDASI LOKASI SO (DI SHEET SO SPREADSHEET 1)
+    async function muatUlangSO() {
+        try {
+            let res = await fetch(`${URL_API}?target=lokasi`);
+            databaseSO = await res.json();
+        } catch(e) { console.error(e); }
+    }
+
+    // AUTOCOMPLETE REKOMENDASI LOKASI SO (SUDAH FIXED)
     function cariLokasiSO(val) {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
         if (!val.trim()) { div.style.display = "none"; return; }
 
+        // Filter toleran huruf besar dan kecil (case-insensitive)
         let hasil = databaseSO.filter(item => item.toLowerCase().includes(val.toLowerCase()));
+        
         if (hasil.length > 0) {
             div.style.display = "block";
             hasil.forEach(item => {
@@ -157,7 +170,9 @@
                 };
                 div.appendChild(divItem);
             });
-        } else { div.style.display = "none"; }
+        } else { 
+            div.style.display = "none"; 
+        }
     }
 
     // FUNGSI PROSES DAFTAR (SIGN UP)
@@ -167,11 +182,11 @@
         const email = document.getElementById('regEmail').value.trim();
         const sandi = document.getElementById('regSandi').value.trim();
 
-        if(!nama || !lokasi || !email || !sandi) return alert("All fields are required!");
+        if(!nama || !lokasi || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
         
-        // Validasi apakah lokasi SO ada di database resmi
+        // Pengecekan cerdas: Tidak sensitif huruf kapital/kecil
         let validSO = databaseSO.find(item => item.toLowerCase() === lokasi.toLowerCase());
-        if(!validSO) return alert("Lokasi SO tidak terdaftar di sistem! Gunakan rekomendasi yang muncul.");
+        if(!validSO) return alert("Lokasi SO tidak terdaftar di sistem! Harap ketik dengan benar dan klik rekomendasi yang muncul.");
 
         toggleLoader(true);
         try {
@@ -190,7 +205,7 @@
             } else {
                 alert(data.message);
             }
-        } catch(e) { alert("Terjadi masalah jaringan."); }
+        } catch(e) { alert("Terjadi masalah jaringan saat mendaftar."); }
         toggleLoader(false);
     }
 
@@ -211,7 +226,6 @@
             if(data.status === "SUCCESS") {
                 userAktif = data.user;
                 
-                // Pasang informasi akun ke form utama secara permanen
                 document.getElementById('formNama').value = userAktif.nama;
                 document.getElementById('formLokasi').value = userAktif.lokasi;
                 document.getElementById('bannerNama').innerText = userAktif.nama;
@@ -219,17 +233,15 @@
                 
                 document.getElementById('formTanggal').valueAsDate = new Date();
                 
-                // Download database barang
                 await muatDataBarang();
                 pindahPage('pageUtama');
             } else {
                 alert(data.message);
             }
-        } catch(e) { alert("Gagal masuk. Cek keselarasan URL API Apps Script Anda."); }
+        } catch(e) { alert("Gagal masuk. Periksa kembali jaringan Anda."); }
         toggleLoader(false);
     }
 
-    // AMBIL DATA BARANG DARI SPREADSHEET
     async function muatDataBarang() {
         try {
             let res = await fetch(`${URL_API}?target=barang`);
@@ -237,7 +249,6 @@
         } catch(e) { console.error("Gagal mendownload data barang", e); }
     }
 
-    // AUTOCOMPLETE REKOMENDASI BARANG
     function cariBarang(val) {
         let div = document.getElementById('barangSuggestions');
         div.innerHTML = "";
@@ -262,7 +273,6 @@
         } else { div.style.display = "none"; }
     }
 
-    // KIRIM FORM PENGAMBILAN KE SPREADSHEET LOG Permintaan
     async function kirimFormBarang() {
         const namaBarang = document.getElementById('formBarang').value.trim();
         const tanggal = document.getElementById('formTanggal').value;
@@ -287,7 +297,7 @@
             let res = await fetch(URL_API, { method: "POST", body: JSON.stringify(payload) });
             let data = await res.json();
             if(data.status === "SUCCESS") {
-                alert("Sukses! Log permintaan barang berhasil dikirim ke pusat.");
+                alert("Sukses! Log permintaan barang berhasil dikirim.");
                 document.getElementById('formBarang').value = "";
                 document.getElementById('formKategori').value = "";
                 document.getElementById('formKode').value = "";
@@ -305,7 +315,6 @@
         pindahPage('pageLogin');
     }
 
-    // Klik di luar area untuk menutup autocomplete otomatis
     document.addEventListener("click", function(e) {
         if(e.target.id !== "formBarang") document.getElementById('barangSuggestions').style.display = "none";
         if(e.target.id !== "regLokasi") document.getElementById('soSuggestions').style.display = "none";

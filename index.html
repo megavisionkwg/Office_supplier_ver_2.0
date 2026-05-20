@@ -4,28 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supplies Office Form</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { text-align: center; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
         .page { display: none; }
-        .active { display: block; }
-        .form-group { margin-bottom: 15px; position: relative; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #495057; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .active { display: block !important; }
+        .form-group { margin-bottom: 18px; position: relative; }
+        label { display: block; font-weight: bold; margin-bottom: 6px; color: #495057; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        input:focus, textarea:focus { border-color: #007bff; outline: none; }
+        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
         button:hover { background: #0056b3; }
-        .btn-secondary { background: #6c757d; margin-top: 5px; }
+        .btn-secondary { background: #6c757d; margin-top: 8px; }
         .btn-secondary:hover { background: #545b62; }
         
-        /* Gaya rekomendasi / autocomplete berdasarkan awalan huruf */
-        .autocomplete-suggestions { position: absolute; border: 1px solid #d4d4d4; background: white; width: 100%; z-index: 99; max-height: 150px; overflow-y: auto; }
-        .suggestion-item { padding: 10px; cursor: pointer; }
-        .suggestion-item:hover { background-color: #e9ecef; }
+        /* Dropdown Rekomendasi */
+        .autocomplete-suggestions { position: absolute; border: 1px solid #ced4da; border-top: none; background: white; width: 100%; z-index: 99; max-height: 160px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 0 0 6px 6px; }
+        .suggestion-item { padding: 10px 12px; cursor: pointer; font-size: 14px; }
+        .suggestion-item:hover { background-color: #f1f7ff; color: #007bff; }
         
-        .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 0; }
-        .checkbox-item { display: flex; align-items: center; gap: 5px; }
-        .checkbox-item input { width: auto; }
+        .radio-group { display: flex; flex-wrap: wrap; gap: 12px; padding: 5px 0; }
+        .radio-item { display: flex; align-items: center; gap: 6px; background: #f8f9fa; padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; }
+        .radio-item input { width: auto; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -43,14 +45,14 @@
         </div>
         <div class="form-group">
             <label>Lokasi SO</label>
-            <input type="text" id="lokasiSO" oninput="cariLokasiSO(this.value)" placeholder="Ketik Lokasi (Contoh: Be...)">
+            <input type="text" id="lokasiSO" oninput="cariLokasiSO(this.value)" placeholder="Ketik Lokasi (Contoh: Karawang, Bekasi)">
             <div id="soSuggestions" class="autocomplete-suggestions"></div>
         </div>
         <div class="form-group">
             <label>Tanggal Pengambilan</label>
             <input type="date" id="tanggal">
         </div>
-        <button onclick="page2">Lanjut ke Tahap 2</button>
+        <button type="button" onclick="pindahKePage2()">Lanjut ke Tahap 2</button>
     </div>
 
     <div id="page2" class="page">
@@ -58,13 +60,13 @@
         
         <div class="form-group">
             <label>Kategori Barang</label>
-            <div class="checkbox-group" id="kategoriContainer">
+            <div class="radio-group" id="kategoriContainer">
                 </div>
         </div>
 
         <div class="form-group">
             <label>Nama Barang</label>
-            <input type="text" id="namaBarang" oninput="cariNamaBarang(this.value)" placeholder="Ketik Nama Barang (Contoh: Pul...)">
+            <input type="text" id="namaBarang" oninput="cariNamaBarang(this.value)" placeholder="Ketik Nama Barang (Contoh: Kertas, Pulpen)">
             <div id="barangSuggestions" class="autocomplete-suggestions"></div>
         </div>
 
@@ -75,7 +77,7 @@
 
         <div class="form-group">
             <label>Satuan Barang (Unit)</label>
-            <div class="checkbox-group" id="satuanContainer">
+            <div class="radio-group" id="satuanContainer">
                 </div>
         </div>
 
@@ -84,46 +86,51 @@
             <textarea id="alasan" rows="3" placeholder="Tulis alasan keperluan barang..."></textarea>
         </div>
 
-        <button onclick="kirimFormulir()">KIRIM DATA (FINISH)</button>
-        <button class="btn-secondary" onclick="kembaliKePage1()">Kembali</button>
+        <button type="button" onclick="kirimFormulir()">KIRIM DATA (FINISH)</button>
+        <button type="button" class="btn-secondary" onclick="kembaliKePage1()">Kembali</button>
     </div>
 </div>
 
 <script>
-    // ================= PENGATURAN UTAMA WEBSITE =================
-    // 1. CANTUMKAN LINK WEB APP GOOGLE APPS SCRIPT KAMU DI SINI
-    const urlWebAppsScript = https://script.google.com/macros/s/AKfycbwVIbJO9DQJv8As4BmXCcnFrKMpDGi0Fv2yM0sPC1rXTbXbVJ7XqgFvTnuLYmGYV_23/exec; 
+    // URL Web App Script dan CSV Spreadsheet kamu
+    const urlWebAppsScript = "ISI_DENGAN_URL_DEPLOY_APPS_SCRIPT_KAMU"; 
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR3FBSOlh6Bjh3V02psbCoR8dR58rNhCNkldJOEt-JIkI5gZokGZ85Y-KTNhL2dsLU2vXOU4SFODzD7/pub?gid=0&single=true&output=csv";
 
-    // Database Rekomendasi Sesuai Aturan Alur Flowchart (Bisa disesuaikan/diambil dari data sebelumnya)
-    const dbLokasiSO = ["Bekasi Kota", "Bekasi Kabupaten", "Jakarta Timur", "Bandung"];
+    // Database Statis Lokasi & Kategori
+    const dbLokasiSO = ["Bekasi Kota", "Bekasi Kabupaten", "Jakarta Timur", "Bandung", "Karawang"];
     const dbKategori = ["ATK", "Elektronik", "Pantry", "Lainnya"];
-    const dbNamaBarang = ["Pulpen Hitam", "Pulpen Warna", "Kertas A4", "Buku Tulis", "Penghapus"];
-    const dbSatuan = ["Pcs", "Box", "Roll", "Pack"];
+    let dataAsetGoogle = [];
 
-    // Mengisi Checkbox Kategori & Satuan saat web dimuat
-    window.onload = function() {
-        // Set tanggal hari ini secara default
-        document.getElementById('tanggal').valueAsDate = new Date();
-
-        // Render Checkbox Kategori
-        const katContainer = document.getElementById('kategoriContainer');
-        dbKategori.forEach(kat => {
-            katContainer.innerHTML += `<div class="checkbox-item"><input type="checkbox" name="kategori" value="${kat}"> ${kat}</div>`;
-        });
-
-        // Render Checkbox Satuan
-        const satContainer = document.getElementById('satuanContainer');
-        dbSatuan.forEach(sat => {
-            satContainer.innerHTML += `<div class="checkbox-item"><input type="checkbox" name="satuan" value="${sat}"> ${sat}</div>`;
+    // Muat data aset langsung dari Link CSV Google Sheets kamu
+    function muatDataAset() {
+        Papa.parse(csvUrl, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                dataAsetGoogle = results.data.filter(item => item["Nama Item"]);
+            }
         });
     }
 
-    // ================= LOGIKA AUTOCOMPLETE (REKOMENDASI BERAWALAN HURUF) =================
+    window.onload = function() {
+        document.getElementById('tanggal').valueAsDate = new Date();
+        muatDataAset();
+
+        // Render Pilihan Kategori
+        const katContainer = document.getElementById('kategoriContainer');
+        dbKategori.forEach((kat, index) => {
+            katContainer.innerHTML += `
+                <label class="radio-item">
+                    <input type="radio" name="kategori" value="${kat}" ${index === 0 ? 'checked' : ''}> ${kat}
+                </label>`;
+        });
+    };
+
+    // Auto-complete Lokasi
     function cariLokasiSO(val) {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
         if (!val) return;
-        // Mencari rekomendasi yang BERAWALAN kata yang diketik (Sesuai flowchart "Be" -> "Bekasi")
         let hasil = dbLokasiSO.filter(item => item.toLowerCase().startsWith(val.toLowerCase()));
         hasil.forEach(item => {
             div.innerHTML += `<div class="suggestion-item" onclick="pilihSO('${item}')">${item}</div>`;
@@ -134,39 +141,55 @@
         document.getElementById('soSuggestions').innerHTML = "";
     }
 
+    // Auto-complete Nama Barang (Menggunakan data riil dari link CSV kamu)
     function cariNamaBarang(val) {
         let div = document.getElementById('barangSuggestions');
         div.innerHTML = "";
         if (!val) return;
-        // Mencari rekomendasi berawalan huruf (Sesuai flowchart "Pul" -> "Pulpen Hitam")
-        let hasil = dbNamaBarang.filter(item => item.toLowerCase().startsWith(val.toLowerCase()));
+        let hasil = dataAsetGoogle.filter(item => item["Nama Item"].toLowerCase().includes(val.toLowerCase()));
         hasil.forEach(item => {
-            div.innerHTML += `<div class="suggestion-item" onclick="pilihBarang('${item}')">${item}</div>`;
+            div.innerHTML += `<div class="suggestion-item" onclick="pilihBarang('${item["Nama Item"]}', '${item["Unit"]}')">${item["Nama Item"]} (${item["Asset Code"]})</div>`;
         });
     }
-    function pilihBarang(val) {
-        document.getElementById('namaBarang').value = val;
+    function pilihBarang(nama, unit) {
+        document.getElementById('namaBarang').value = nama;
         document.getElementById('barangSuggestions').innerHTML = "";
+        
+        // Otomatis buat opsi Unit/Satuan berdasarkan data barang yang dipilih
+        const satContainer = document.getElementById('satuanContainer');
+        satContainer.innerHTML = `
+            <label class="radio-item">
+                <input type="radio" name="satuan" value="${unit}" checked> ${unit}
+            </label>`;
     }
 
-    // ================= NAVIGASI HALAMAN =================
+    // Navigasi Perpindahan Halaman Form
     function pindahKePage2() {
+        const nama = document.getElementById('namaKaryawan').value;
+        const id = document.getElementById('idKaryawan').value;
+        const lokasi = document.getElementById('lokasiSO').value;
+
+        if(!nama || !id || !lokasi) {
+            alert("Harap lengkapi semua kolom di Tahap 1 terlebih dahulu!");
+            return;
+        }
+
         document.getElementById('page1').classList.remove('active');
         document.getElementById('page2').classList.add('active');
+        window.scrollTo(0, 0);
     }
+
     function kembaliKePage1() {
         document.getElementById('page2').classList.remove('active');
         document.getElementById('page1').classList.add('active');
+        window.scrollTo(0, 0);
     }
 
-    // ================= PROSES FINISH & KIRIM KE SPREADSHEET =================
+    // Kirim Hasil Akhir ke Google Sheets
     function kirimFormulir() {
-        // Ambil nilai dari checkbox kategori yang terpilih
-        let katTerpilih = Array.from(document.querySelectorAll('input[name="kategori"]:checked')).map(el => el.value).join(", ");
-        // Ambil nilai dari checkbox satuan yang terpilih
-        let satTerpilih = Array.from(document.querySelectorAll('input[name="satuan"]:checked')).map(el => el.value).join(", ");
+        let katTerpilih = document.querySelector('input[name="kategori"]:checked')?.value || "";
+        let satTerpilih = document.querySelector('input[name="satuan"]:checked')?.value || "";
 
-        // Membuat objek kumpulan data inputan
         const formPayload = {
             namaKaryawan: document.getElementById('namaKaryawan').value,
             idKaryawan: document.getElementById('idKaryawan').value,
@@ -179,27 +202,24 @@
             alasan: document.getElementById('alasan').value
         };
 
-        if(!formPayload.namaKaryawan || !formPayload.namaBarang) {
-            alert("Harap isi Nama Karyawan dan Nama Barang terlebih dahulu!");
+        if(!formPayload.namaBarang) {
+            alert("Harap tentukan Nama Barang terlebih dahulu!");
             return;
         }
 
-        alert("Sedang mengirim data ke Spreadsheet, mohon tunggu...");
+        alert("Sedang mengirim data, mohon tunggu...");
 
-        // Mengirim data ke Google Apps Script menggunakan metode POST
         fetch(urlWebAppsScript, {
             method: "POST",
-            mode: "no-cors", // Mengabaikan kendala CORS local browser
+            mode: "no-cors",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(formPayload)
         })
         .then(() => {
-            alert("DATA BERHASIL DIINPUT SECARA OTOMATIS KE SPREADSHEET!");
-            location.reload(); // Reset form kembali ke awal
+            alert("DATA BERHASIL DISIMPAN KE SPREADSHEET!");
+            location.reload();
         })
-        .catch(err => {
-            alert("Terjadi kesalahan pengiriman: " + err);
-        });
+        .catch(err => alert("Gagal mengirim: " + err));
     }
 </script>
 

@@ -14,7 +14,7 @@
         label { display: block; font-weight: bold; margin-bottom: 6px; color: #495057; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: #fff; }
         input:focus, select:focus, textarea:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.15); }
-        input[readonly] { background-color: #e9ecef; color: #495057; cursor: not-allowed; }
+        input[readonly], input[disabled] { background-color: #e9ecef; color: #495057; cursor: not-allowed; }
         button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
         button:hover { background: #0056b3; }
         .btn-secondary { background: #6c757d; margin-top: 8px; }
@@ -96,6 +96,10 @@
             <input type="text" id="satuanBarang" readonly placeholder="Otomatis terisi ketika barang dipilih">
         </div>
         <div class="form-group">
+            <label>Kode Barang</label>
+            <input type="text" id="kodeBarang" readonly placeholder="Otomatis terisi ketika barang dipilih">
+        </div>
+        <div class="form-group">
             <label>Alasan Pengambilan</label>
             <textarea id="alasan" rows="3" placeholder="Tulis alasan keperluan barang..."></textarea>
         </div>
@@ -115,36 +119,58 @@
 
 <script>
     // URL Web App Script Anda
-    const urlAppsScriptPusat = "https://script.google.com/macros/s/AKfycbzZVa2GT6dGsQMp4_SVIWt-wixtgD-LMhgzafJI2IigcDqu7PdN1i3XKsSlDmpnn1KG/exec"; 
+    const urlAppsScriptPusat = "https://script.google.com/macros/s/AKfycbwzxLcRAT3pWnpERNjS9uSnrQXiT6oKFABDVgH0LVmfVSZBJBSujuP-tpdyAua9Qrby/exec"; 
 
     let dataAsetGoogle = [];
     let dbLokasiSO = [];
     let dbKategori = [];
 
+    // FITUR OPTIMASI SPEED: Menggunakan Caching LocalStorage agar muat berkali-kali lipat lebih instan
     async function muatSemuaDatabase() {
         try {
-            document.getElementById('statusDb').innerHTML = "⏳ Sedang mengunduh database...";
+            // Cek apakah ada cache data sebelumnya agar langsung dirender tanpa nunggu download
+            if (localStorage.getItem('dbLokasiSO')) dbLokasiSO = JSON.parse(localStorage.getItem('dbLokasiSO'));
+            if (localStorage.getItem('dbKategori')) {
+                dbKategori = JSON.parse(localStorage.getItem('dbKategori'));
+                renderKategoriDropdown();
+            }
+            if (localStorage.getItem('dataAsetGoogle')) dataAsetGoogle = JSON.parse(localStorage.getItem('dataAsetGoogle'));
+
+            if (dbLokasiSO.length > 0 && dbKategori.length > 0 && dataAsetGoogle.length > 0) {
+                document.getElementById('statusDb').innerHTML = "✅ Database Terhubung (Cached) & Siap.";
+                document.getElementById('statusDb').style.color = "#28a745";
+            } else {
+                document.getElementById('statusDb').innerHTML = "⏳ Sedang mengunduh database...";
+            }
             
+            // Ambil data terbaru di latar belakang (Background Sync) agar tidak mengganggu user
             let resLokasi = await fetch(`${urlAppsScriptPusat}?target=lokasi`);
             dbLokasiSO = await resLokasi.json();
+            localStorage.setItem('dbLokasiSO', JSON.stringify(dbLokasiSO));
 
             let resKategori = await fetch(`${urlAppsScriptPusat}?target=kategori`);
             dbKategori = await resKategori.json();
+            localStorage.setItem('dbKategori', JSON.stringify(dbKategori));
             renderKategoriDropdown();
 
             let resBarang = await fetch(`${urlAppsScriptPusat}?target=barang`);
             dataAsetGoogle = await resBarang.json();
+            localStorage.setItem('dataAsetGoogle', JSON.stringify(dataAsetGoogle));
 
             document.getElementById('statusDb').innerHTML = "✅ Database Terhubung & Siap Digunakan.";
             document.getElementById('statusDb').style.color = "#28a745";
         } catch (error) {
-            document.getElementById('statusDb').innerHTML = "❌ Gagal sinkronisasi database!";
-            document.getElementById('statusDb').style.color = "#dc3545";
-            console.error(error);
+            console.error("Gagal sinkronisasi data terbaru, menggunakan data lokal:", error);
+            if (dataAsetGoogle.length > 0) {
+                document.getElementById('statusDb').innerHTML = "⚠️ Menggunakan database offline.";
+                document.getElementById('statusDb').style.color = "#ffc107";
+            } else {
+                document.getElementById('statusDb').innerHTML = "❌ Gagal sinkronisasi database!";
+                document.getElementById('statusDb').style.color = "#dc3545";
+            }
         }
     }
 
-    // Render Kategori ke Dropdown Kompak
     function renderKategoriDropdown() {
         const selectEl = document.getElementById('kategoriSelect');
         selectEl.innerHTML = '<option value="" disabled selected>-- Pilih Kategori Barang --</option>';
@@ -184,13 +210,11 @@
         document.getElementById('soSuggestions').style.display = "none";
     }
 
-    // FIX LOGIKA PENCARIAN REKOMENDASI BARANG
     function cariNamaBarang(val) {
         let div = document.getElementById('barangSuggestions');
         div.innerHTML = "";
         if (!val.trim()) { div.style.display = "none"; return; }
 
-        // Filter murni berdasarkan input ketikan user pada properti "Nama Item"
         let hasil = dataAsetGoogle.filter(item => {
             return item["Nama Item"] && item["Nama Item"].toLowerCase().includes(val.toLowerCase());
         });
@@ -199,11 +223,12 @@
             div.style.display = "block";
             hasil.forEach(item => {
                 let cleanNama = item["Nama Item"].replace(/'/g, "\\'");
-                let cleanUnit = item["Unit"].replace(/'/g, "\\'");
+                let cleanUnit = (item["Unit"] || "").replace(/'/g, "\\'");
+                let cleanKode = (item["Kode Item"] || "").replace(/'/g, "\\'");
                 
                 div.innerHTML += `
-                    <div class="suggestion-item" onclick="pilihBarang('${cleanNama}', '${cleanUnit}')">
-                        <strong>${item["Nama Item"]}</strong> <span style="color:#777; font-size:12px;">— Unit: ${item["Unit"]} (Code: ${item["Asset Code"]})</span>
+                    <div class="suggestion-item" onclick="pilihBarang('${cleanNama}', '${cleanUnit}', '${cleanKode}')">
+                        <strong>${item["Nama Item"]}</strong> <span style="color:#777; font-size:12px;">— Unit: ${item["Unit"] || '-'} (Kode: ${item["Kode Item"] || '-'})</span>
                     </div>`;
             });
         } else {
@@ -211,9 +236,10 @@
         }
     }
 
-    function pilihBarang(nama, unit) {
+    function pilihBarang(nama, unit, kode) {
         document.getElementById('namaBarang').value = nama;
         document.getElementById('satuanBarang').value = unit; 
+        document.getElementById('kodeBarang').value = kode; // 👈 Isi otomatis kode barang dari rekomendasi
         document.getElementById('barangSuggestions').style.display = "none";
     }
 
@@ -248,6 +274,7 @@
     function kirimFormulir() {
         let katTerpilih = document.getElementById('kategoriSelect').value;
         let satTerpilih = document.getElementById('satuanBarang').value;
+        let kodeTerpilih = document.getElementById('kodeBarang').value;
         let namaBarangInput = document.getElementById('namaBarang').value.trim();
 
         if(!katTerpilih) {
@@ -265,16 +292,18 @@
             return;
         }
 
-        const formPayload = {
-            namaKaryawan: document.getElementById('namaKaryawan').value,
-            idKaryawan: document.getElementById('idKaryawan').value,
-            lokasiSO: document.getElementById('lokasiSO').value,
-            tanggal: document.getElementById('tanggal').value,
+        // Sinkronisasi data form payload final
+        var formPayload = {
+            namaKaryawan: document.getElementById("namaKaryawan").value,
+            idKaryawan: document.getElementById("idKaryawan").value,
+            lokasiSO: document.getElementById("lokasiSO").value,
+            tanggal: document.getElementById("tanggal").value,
             kategoriBarang: katTerpilih,
+            kodeBarang: kodeTerpilih, // 👈 Terkirim aman ke Apps Script doPost()
             namaBarang: cocokBarang["Nama Item"],
-            qtyBarang: document.getElementById('qtyBarang').value,
+            qtyBarang: document.getElementById("qtyBarang").value,
             satuanBarang: satTerpilih,
-            alasan: document.getElementById('alasan').value
+            alasan: document.getElementById("alasan").value
         };
 
         document.getElementById('page2').classList.remove('active');

@@ -111,14 +111,14 @@
 </div>
 
 <script>
-    // URL API milik lu yang sudah valid
-    const URL_API = "https://script.google.com/macros/s/AKfycbz5Mb2xYO9YJh1BgvCqxXMVfzOlStm08D5ScU2svmL8s7N9mtphYKVJkjC5LDCDmVa-/exec";
+    // URL API Google Apps Script Lu yang Valid
+    const URL_API = "https://script.google.com/macros/s/AKfycbz5Mb2xYO9YJh1BgvCqxXMVfzOlStm08D5ScU2svmL8s7N9mtphYKVjkjC5LDCDmVa-/exec";
 
     let databaseBarang = [];
     let databaseSO = [];
     let userAktif = null;
 
-    // Load Data Lokasi SO di background sejak web pertama kali dibuka biar gak nge-lag
+    // Load Data Lokasi SO di background sejak pertama kali web dibuka
     window.addEventListener('DOMContentLoaded', async () => {
         try {
             let res = await fetch(`${URL_API}?target=lokasi`);
@@ -138,7 +138,9 @@
 
     function bukaPageSignUp() {
         pindahPage('pageSignUp');
-        // Jika karena kendala jaringan data SO kosong, kita paksa tarik kembali
+        // Bersihkan data input lama saat halaman dibuka kembali
+        document.getElementById('regLokasi').value = "";
+        document.getElementById('soSuggestions').style.display = "none";
         if (databaseSO.length === 0) { muatUlangSO(); }
     }
 
@@ -149,22 +151,34 @@
         } catch(e) { console.error(e); }
     }
 
-    // AUTOCOMPLETE REKOMENDASI LOKASI SO (SUDAH FIXED)
+    // AUTOCOMPLETE REKOMENDASI LOKASI SO (SUDAH FIX 100% SENSITIVITAS HURUF)
     function cariLokasiSO(val) {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
-        if (!val.trim()) { div.style.display = "none"; return; }
+        
+        if (!val || !val.trim()) { 
+            div.style.display = "none"; 
+            return; 
+        }
 
-        // Filter toleran huruf besar dan kecil (case-insensitive)
-        let hasil = databaseSO.filter(item => item.toLowerCase().includes(val.toLowerCase()));
+        let kataKunci = val.toLowerCase().trim();
+
+        // Filter super toleran: memaksa pencocokan huruf kecil semua agar ketemu
+        let hasil = databaseSO.filter(function(item) {
+            if (!item) return false;
+            return String(item).toLowerCase().includes(kataKunci);
+        });
         
         if (hasil.length > 0) {
             div.style.display = "block";
-            hasil.forEach(item => {
+            // Batasi maksimal 5 rekomendasi teratas yang tampil agar rapi
+            hasil.slice(0, 5).forEach(item => {
                 let divItem = document.createElement('div');
                 divItem.className = 'suggestion-item';
                 divItem.innerText = item;
-                divItem.onclick = () => {
+                
+                // Ketika rekomendasi diklik, langsung set value kolom dan tutup dropdown
+                divItem.onclick = function() {
                     document.getElementById('regLokasi').value = item;
                     div.style.display = "none";
                 };
@@ -178,15 +192,23 @@
     // FUNGSI PROSES DAFTAR (SIGN UP)
     async function prosesSignUp() {
         const nama = document.getElementById('regNama').value.trim();
-        const lokasi = document.getElementById('regLokasi').value.trim();
+        let lokasiInput = document.getElementById('regLokasi').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const sandi = document.getElementById('regSandi').value.trim();
 
-        if(!nama || !lokasi || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
+        if(!nama || !lokasiInput || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
         
-        // Pengecekan cerdas: Tidak sensitif huruf kapital/kecil
-        let validSO = databaseSO.find(item => item.toLowerCase() === lokasi.toLowerCase());
-        if(!validSO) return alert("Lokasi SO tidak terdaftar di sistem! Harap ketik dengan benar dan klik rekomendasi yang muncul.");
+        // Auto-Correct: Jika user lupa mengetik kata "SO " di depan, sistem bantu menambahkan secara otomatis
+        if (!lokasiInput.toUpperCase().startsWith("SO ")) {
+            lokasiInput = "SO " + lokasiInput;
+        }
+        
+        // Validasi database internal (Case-Insensitive)
+        let validSO = databaseSO.find(item => item.toLowerCase().trim() === lokasiInput.toLowerCase());
+        
+        if(!validSO) {
+            return alert("Lokasi SO tidak terdaftar di sistem! Harap ketik dengan benar (Contoh: SO Karawang) dan klik rekomendasi yang muncul.");
+        }
 
         toggleLoader(true);
         try {
@@ -315,6 +337,7 @@
         pindahPage('pageLogin');
     }
 
+    // Menutup dropdown otomatis jika klik di luar kolom input
     document.addEventListener("click", function(e) {
         if(e.target.id !== "formBarang") document.getElementById('barangSuggestions').style.display = "none";
         if(e.target.id !== "regLokasi") document.getElementById('soSuggestions').style.display = "none";

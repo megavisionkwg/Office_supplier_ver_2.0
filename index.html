@@ -3,307 +3,313 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supplies Office Form - Fixed & Compact UI</title>
+    <title>Supplies Office System</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; padding: 20px; color: #333; }
+        .container { max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #007bff; margin-top: 0; margin-bottom: 20px; }
         .page { display: none; }
-        .active { display: block !important; }
-        .form-group { margin-bottom: 18px; position: relative; }
-        label { display: block; font-weight: bold; margin-bottom: 6px; color: #495057; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: #fff; }
-        input:focus, select:focus, textarea:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.15); }
-        input[readonly], input[disabled] { background-color: #e9ecef; color: #495057; cursor: not-allowed; }
-        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        .active { display: block; }
+        .form-group { margin-bottom: 15px; position: relative; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        input:focus, select:focus, textarea:focus { border-color: #007bff; outline: none; }
+        input[readonly] { background-color: #e9ecef; color: #495057; cursor: not-allowed; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0056b3; }
-        .btn-secondary { background: #6c757d; margin-top: 8px; }
-        .btn-secondary:hover { background: #545b62; }
-        
-        .db-status { font-size: 12px; color: #666; margin-bottom: 15px; font-style: italic; text-align: center; }
-        
-        /* DROPDOWN AUTOCOMPLETE REKOMENDASI */
-        .autocomplete-suggestions { 
-            position: absolute; 
-            border: 1px solid #ced4da; 
-            background: white; 
-            width: 100%; 
-            z-index: 9999; 
-            max-height: 200px; 
-            overflow-y: auto; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
-            border-radius: 0 0 6px 6px; 
-            margin-top: 2px;
-            display: none;
-        }
-        .suggestion-item { padding: 12px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #f8f9fa; text-align: left; color: #333; }
-        .suggestion-item:hover { background-color: #007bff; color: white; font-weight: bold; }
-        
-        .loader-box { text-align: center; padding: 40px 20px; }
-        .spinner { margin: 20px auto; width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .warning-text { color: #dc3545; font-weight: bold; margin-top: 15px; font-size: 14px; }
+        .link-btn { text-align: center; margin-top: 15px; font-size: 14px; color: #007bff; cursor: pointer; text-decoration: underline; }
+        .autocomplete-suggestions { position: absolute; border: 1px solid #ccc; background: white; width: 100%; z-index: 99; max-height: 150px; overflow-y: auto; display: none; border-radius: 0 0 5px 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f1f1; }
+        .suggestion-item:hover { background: #007bff; color: white; }
+        .loader { text-align: center; display: none; padding: 20px; font-weight: bold; color: #555; }
+        .user-info-banner { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: 500; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="statusDb" class="db-status">⏳ Menghubungkan ke database Google Sheets...</div>
+    <div id="loader" class="loader">⏳ Memproses ke server, mohon tunggu...</div>
 
-    <div id="page1" class="page active">
-        <h2>Supplies Office - Tahap 1</h2>
+    <div id="pageLogin" class="page active">
+        <h2>Supplies Office - Login</h2>
         <div class="form-group">
-            <label>Nama Karyawan</label>
-            <input type="text" id="namaKaryawan" placeholder="Nama Lengkap Karyawan">
+            <label>Akun Email</label>
+            <input type="email" id="loginEmail" placeholder="Masukkan email terdaftar">
         </div>
         <div class="form-group">
-            <label>ID Karyawan</label>
-            <input type="text" id="idKaryawan" placeholder="Nomor ID Karyawan">
+            <label>Sandi (Password)</label>
+            <input type="password" id="loginSandi" placeholder="Masukkan sandi">
+        </div>
+        <button onclick="prosesLogin()">LOG IN</button>
+        <div class="link-btn" onclick="bukaPageSignUp()">Belum punya akun? Daftar di sini</div>
+    </div>
+
+    <div id="pageSignUp" class="page">
+        <h2>Pendaftaran Pengguna</h2>
+        <div class="form-group">
+            <label>Nama Karyawan</label>
+            <input type="text" id="regNama" placeholder="Nama lengkap Anda">
         </div>
         <div class="form-group">
             <label>Lokasi SO</label>
-            <input type="text" id="lokasiSO" oninput="cariLokasiSO(this.value)" placeholder="Ketik lokasi SO..." autocomplete="off">
+            <input type="text" id="regLokasi" oninput="cariLokasiSO(this.value)" placeholder="Ketik lokasi SO Anda..." autocomplete="off">
             <div id="soSuggestions" class="autocomplete-suggestions"></div>
         </div>
         <div class="form-group">
-            <label>Tanggal Pengambilan</label>
-            <input type="date" id="tanggal">
+            <label>Akun Email</label>
+            <input type="email" id="regEmail" placeholder="contoh@gmail.com">
         </div>
-        <button type="button" onclick="pindahKePage2()">Lanjut ke Tahap 2</button>
+        <div class="form-group">
+            <label>Sandi (Password)</label>
+            <input type="password" id="regSandi" placeholder="Buat sandi baru">
+        </div>
+        <button onclick="prosesSignUp()">DAFTAR AKUN</button>
+        <div class="link-btn" onclick="pindahPage('pageLogin')">Sudah punya akun? Kembali ke Login</div>
     </div>
 
-    <div id="page2" class="page">
-        <h2>Supplies Office - Tahap 2</h2>
+    <div id="pageUtama" class="page">
+        <h2>Form Pengambilan Barang</h2>
+        <div class="user-info-banner">
+            Karyawan: <strong id="bannerNama">-</strong> | SO: <strong id="bannerLokasi">-</strong>
+        </div>
         
+        <input type="hidden" id="formNama">
+        <input type="hidden" id="formLokasi">
+
         <div class="form-group">
-            <label>Nama Barang</label>
-            <input type="text" id="namaBarang" oninput="cariNamaBarang(this.value)" placeholder="Ketik nama barang (contoh: Kertas, Pulpen)..." autocomplete="off">
+            <label>Tanggal Pengambilan</label>
+            <input type="date" id="formTanggal">
+        </div>
+        <div class="form-group">
+            <label>Cari Nama Barang</label>
+            <input type="text" id="formBarang" oninput="cariBarang(this.value)" placeholder="Ketik nama barang..." autocomplete="off">
             <div id="barangSuggestions" class="autocomplete-suggestions"></div>
         </div>
         <div class="form-group">
             <label>Kategori Barang</label>
-            <input type="text" id="kategoriBarang" readonly placeholder="Otomatis terisi ketika barang dipilih">
-        </div>
-        <div class="form-group">
-            <label>Quantity (Qty)</label>
-            <input type="number" id="qtyBarang" min="1" value="1">
-        </div>
-        <div class="form-group">
-            <label>Satuan Barang (Unit)</label>
-            <input type="text" id="satuanBarang" readonly placeholder="Otomatis terisi ketika barang dipilih">
+            <input type="text" id="formKategori" readonly placeholder="Otomatis terisi">
         </div>
         <div class="form-group">
             <label>Kode Barang</label>
-            <input type="text" id="kodeBarang" readonly placeholder="Otomatis terisi ketika barang dipilih">
+            <input type="text" id="formKode" readonly placeholder="Otomatis terisi">
+        </div>
+        <div class="form-group">
+            <label>Quantity (Qty)</label>
+            <input type="number" id="formQty" min="1" value="1">
+        </div>
+        <div class="form-group">
+            <label>Satuan</label>
+            <input type="text" id="formSatuan" readonly placeholder="Otomatis terisi">
         </div>
         <div class="form-group">
             <label>Alasan Pengambilan</label>
-            <textarea id="alasan" rows="3" placeholder="Tulis alasan keperluan barang..."></textarea>
+            <textarea id="formAlasan" rows="3" placeholder="Alasan keperluan barang..."></textarea>
         </div>
-        <button type="button" onclick="kirimFormulir()">KIRIM DATA (FINISH)</button>
-        <button type="button" class="btn-secondary" onclick="kembaliKePage1()">Kembali</button>
-    </div>
-
-    <div id="page3" class="page">
-        <div class="loader-box">
-            <h2>Memproses Formulir</h2>
-            <div class="spinner"></div>
-            <p>Sedang mengirim data secara aman ke database pusat...</p>
-            <p class="warning-text">⚠️ JANGAN KELUAR ATAU REFRESH HALAMAN INI!</p>
-        </div>
+        <button onclick="kirimFormBarang()">KIRIM PERMINTAAN</button>
+        <div class="link-btn" onclick="logout()">Log Out / Keluar Akun</div>
     </div>
 </div>
 
 <script>
-    // URL Web App Script Anda (Pastikan deploy versi baru dulu)
-    const urlAppsScriptPusat = "https://script.google.com/macros/s/AKfycbyS1cfVZ9H-3WaYWUCf8fLgDBA56k7u60pCGddshSITrJQPK7TOeJTp7uBw-9wSmEcG/exec"; 
+    // 🚨 PASTE URL WEB APP APPS SCRIPT LU DI SINI
+    const URL_API = "TEMPATKAN_URL_WEB_APP_APPS_SCRIPT_LU_DISINI";
 
-    let dataAsetGoogle = [];
-    let dbLokasiSO = [];
+    let databaseBarang = [];
+    let databaseSO = [];
+    let userAktif = null;
 
-    async function muatSemuaDatabase() {
-        try {
-            if (localStorage.getItem('dbLokasiSO')) dbLokasiSO = JSON.parse(localStorage.getItem('dbLokasiSO'));
-            if (localStorage.getItem('dataAsetGoogle')) dataAsetGoogle = JSON.parse(localStorage.getItem('dataAsetGoogle'));
+    function pindahPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+    }
 
-            if (dbLokasiSO.length > 0 && dataAsetGoogle.length > 0) {
-                document.getElementById('statusDb').innerHTML = "✅ Database Terhubung (Cached) & Siap.";
-                document.getElementById('statusDb').style.color = "#28a745";
-            } else {
-                document.getElementById('statusDb').innerHTML = "⏳ Sedang mengunduh database...";
-            }
-            
-            let resLokasi = await fetch(`${urlAppsScriptPusat}?target=lokasi`);
-            dbLokasiSO = await resLokasi.json();
-            localStorage.setItem('dbLokasiSO', JSON.stringify(dbLokasiSO));
+    function toggleLoader(show) {
+        document.getElementById('loader').style.display = show ? 'block' : 'none';
+    }
 
-            let resBarang = await fetch(`${urlAppsScriptPusat}?target=barang`);
-            dataAsetGoogle = await resBarang.json();
-            localStorage.setItem('dataAsetGoogle', JSON.stringify(dataAsetGoogle));
-
-            document.getElementById('statusDb').innerHTML = "✅ Database Terhubung & Siap Digunakan.";
-            document.getElementById('statusDb').style.color = "#28a745";
-        } catch (error) {
-            console.error("Gagal sinkronisasi data terbaru:", error);
-            if (dataAsetGoogle.length > 0) {
-                document.getElementById('statusDb').innerHTML = "⚠️ Menggunakan database offline.";
-                document.getElementById('statusDb').style.color = "#ffc107";
-            } else {
-                document.getElementById('statusDb').innerHTML = "❌ Gagal sinkronisasi database!";
-                document.getElementById('statusDb').style.color = "#dc3545";
-            }
+    // Ambil data rekomendasi SO pas halaman registrasi dibuka
+    async function bukaPageSignUp() {
+        pindahPage('pageSignUp');
+        if (databaseSO.length === 0) {
+            try {
+                let res = await fetch(`${URL_API}?target=lokasi`);
+                databaseSO = await res.json();
+            } catch(e) { console.error("Gagal memuat daftar lokasi SO", e); }
         }
     }
 
-    window.onload = function() {
-        document.getElementById('tanggal').valueAsDate = new Date();
-        muatSemuaDatabase();
-
-        document.addEventListener("click", function (e) {
-            if (e.target.id !== "lokasiSO") document.getElementById('soSuggestions').style.display = "none";
-            if (e.target.id !== "namaBarang") document.getElementById('barangSuggestions').style.display = "none";
-        });
-    };
-
+    // AUTOCOMPLETE REKOMENDASI LOKASI SO (DI SHEET SO SPREADSHEET 1)
     function cariLokasiSO(val) {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
         if (!val.trim()) { div.style.display = "none"; return; }
-        
-        let hasil = dbLokasiSO.filter(item => item.toLowerCase().includes(val.toLowerCase()));
+
+        let hasil = databaseSO.filter(item => item.toLowerCase().includes(val.toLowerCase()));
         if (hasil.length > 0) {
             div.style.display = "block";
             hasil.forEach(item => {
-                div.innerHTML += `<div class="suggestion-item" onclick="pilihSO('${item}')">${item}</div>`;
+                let divItem = document.createElement('div');
+                divItem.className = 'suggestion-item';
+                divItem.innerText = item;
+                divItem.onclick = () => {
+                    document.getElementById('regLokasi').value = item;
+                    div.style.display = "none";
+                };
+                div.appendChild(divItem);
             });
-        } else {
-            div.style.display = "none";
-        }
+        } else { div.style.display = "none"; }
     }
 
-    function pilihSO(val) {
-        document.getElementById('lokasiSO').value = val;
-        document.getElementById('soSuggestions').style.display = "none";
+    // FUNGSI PROSES DAFTAR (SIGN UP)
+    async function prosesSignUp() {
+        const nama = document.getElementById('regNama').value.trim();
+        const lokasi = document.getElementById('regLokasi').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const sandi = document.getElementById('regSandi').value.trim();
+
+        if(!nama || !lokasi || !email || !sandi) return alert("All fields are required!");
+        
+        // Validasi apakah lokasi SO ada di database resmi
+        let validSO = databaseSO.find(item => item.toLowerCase() === lokasi.toLowerCase());
+        if(!validSO) return alert("Lokasi SO tidak terdaftar di sistem! Gunakan rekomendasi yang muncul.");
+
+        toggleLoader(true);
+        try {
+            let res = await fetch(URL_API, {
+                method: "POST",
+                body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, email, sandi })
+            });
+            let data = await res.json();
+            if(data.status === "SUCCESS") {
+                alert("Pendaftaran Berhasil! Silakan masuk menggunakan akun baru Anda.");
+                document.getElementById('regNama').value = "";
+                document.getElementById('regLokasi').value = "";
+                document.getElementById('regEmail').value = "";
+                document.getElementById('regSandi').value = "";
+                pindahPage('pageLogin');
+            } else {
+                alert(data.message);
+            }
+        } catch(e) { alert("Terjadi masalah jaringan."); }
+        toggleLoader(false);
     }
 
-    function cariNamaBarang(val) {
+    // FUNGSI PROSES LOGIN
+    async function prosesLogin() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const sandi = document.getElementById('loginSandi').value.trim();
+
+        if(!email || !sandi) return alert("Email & Sandi wajib diisi!");
+
+        toggleLoader(true);
+        try {
+            let res = await fetch(URL_API, {
+                method: "POST",
+                body: JSON.stringify({ fitur: "LOGIN", email, sandi })
+            });
+            let data = await res.json();
+            if(data.status === "SUCCESS") {
+                userAktif = data.user;
+                
+                // Pasang informasi akun ke form utama secara permanen
+                document.getElementById('formNama').value = userAktif.nama;
+                document.getElementById('formLokasi').value = userAktif.lokasi;
+                document.getElementById('bannerNama').innerText = userAktif.nama;
+                document.getElementById('bannerLokasi').innerText = userAktif.lokasi;
+                
+                document.getElementById('formTanggal').valueAsDate = new Date();
+                
+                // Download database barang
+                await muatDataBarang();
+                pindahPage('pageUtama');
+            } else {
+                alert(data.message);
+            }
+        } catch(e) { alert("Gagal masuk. Cek keselarasan URL API Apps Script Anda."); }
+        toggleLoader(false);
+    }
+
+    // AMBIL DATA BARANG DARI SPREADSHEET
+    async function muatDataBarang() {
+        try {
+            let res = await fetch(`${URL_API}?target=barang`);
+            databaseBarang = await res.json();
+        } catch(e) { console.error("Gagal mendownload data barang", e); }
+    }
+
+    // AUTOCOMPLETE REKOMENDASI BARANG
+    function cariBarang(val) {
         let div = document.getElementById('barangSuggestions');
         div.innerHTML = "";
         if (!val.trim()) { div.style.display = "none"; return; }
 
-        let hasil = dataAsetGoogle.filter(item => {
-            return item["Nama Item"] && item["Nama Item"].toLowerCase().includes(val.toLowerCase());
-        });
-
+        let hasil = databaseBarang.filter(item => item["Nama Item"].toLowerCase().includes(val.toLowerCase()));
         if (hasil.length > 0) {
             div.style.display = "block";
             hasil.forEach(item => {
-                let cleanNama = item["Nama Item"].replace(/'/g, "\\'");
-                let cleanUnit = (item["Unit"] || "").replace(/'/g, "\\'");
-                let cleanKode = (item["Kode Item"] || "").replace(/'/g, "\\'");
-                let cleanKategori = (item["Asset Code"] || "").replace(/'/g, "\\'"); 
-                
-                div.innerHTML += `
-                    <div class="suggestion-item" onclick="pilihBarang('${cleanNama}', '${cleanUnit}', '${cleanKode}', '${cleanKategori}')">
-                        <strong>${item["Nama Item"]}</strong> <span style="color:#777; font-size:12px;">— Kat: ${item["Asset Code"] || '-'} (Unit: ${item["Unit"] || '-'})</span>
-                    </div>`;
+                let divItem = document.createElement('div');
+                divItem.className = 'suggestion-item';
+                divItem.innerHTML = `<strong>${item["Nama Item"]}</strong> <small style='color:#777;'>(${item["Asset Code"]})</small>`;
+                divItem.onclick = () => {
+                    document.getElementById('formBarang').value = item["Nama Item"];
+                    document.getElementById('formKategori').value = item["Asset Code"];
+                    document.getElementById('formKode').value = item["Kode Item"];
+                    document.getElementById('formSatuan').value = item["Unit"];
+                    div.style.display = "none";
+                };
+                div.appendChild(divItem);
             });
-        } else {
-            div.style.display = "none";
-        }
+        } else { div.style.display = "none"; }
     }
 
-    function pilihBarang(nama, unit, kode, kategori) {
-        document.getElementById('namaBarang').value = nama;
-        document.getElementById('satuanBarang').value = unit; 
-        document.getElementById('kodeBarang').value = kode; 
-        document.getElementById('kategoriBarang').value = kategori; // Mengisi otomatis Kategori dari Asset Code
-        document.getElementById('barangSuggestions').style.display = "none";
-    }
+    // KIRIM FORM PENGAMBILAN KE SPREADSHEET LOG Permintaan
+    async function kirimFormBarang() {
+        const namaBarang = document.getElementById('formBarang').value.trim();
+        const tanggal = document.getElementById('formTanggal').value;
+        if(!tanggal) return alert("Harap tentukan tanggal pengambilan!");
+        if(!namaBarang || !document.getElementById('formKategori').value) return alert("Pilih nama barang yang valid dari daftar!");
 
-    function pindahKePage2() {
-        const nama = document.getElementById('namaKaryawan').value.trim();
-        const id = document.getElementById('idKaryawan').value.trim();
-        const lokasiInput = document.getElementById('lokasiSO').value.trim();
-
-        if(!nama || !id || !lokasiInput) {
-            alert("Harap lengkapi seluruh formulir Tahap 1!");
-            return;
-        }
-
-        let cocokSO = dbLokasiSO.find(item => item.toLowerCase() === lokasiInput.toLowerCase());
-        if (!cocokSO) {
-            alert("Lokasi SO tidak terdaftar!");
-            return;
-        }
-        
-        document.getElementById('lokasiSO').value = cocokSO;
-        document.getElementById('page1').classList.remove('active');
-        document.getElementById('page2').classList.add('active');
-        window.scrollTo(0, 0);
-    }
-
-    function kembaliKePage1() {
-        document.getElementById('page2').classList.remove('active');
-        document.getElementById('page1').classList.add('active');
-        window.scrollTo(0, 0);
-    }
-
-    function kirimFormulir() {
-        let katTerpilih = document.getElementById('kategoriBarang').value; 
-        let satTerpilih = document.getElementById('satuanBarang').value;
-        let kodeTerpilih = document.getElementById('kodeBarang').value;
-        let namaBarangInput = document.getElementById('namaBarang').value.trim();
-
-        if(!namaBarangInput) {
-            alert("Nama Barang tidak boleh kosong!");
-            return;
-        }
-        if(!katTerpilih) {
-            alert("Kategori gagal dimuat, silakan pilih ulang barang Anda dari rekomendasi!");
-            return;
-        }
-
-        let cocokBarang = dataAsetGoogle.find(item => item["Nama Item"].toLowerCase() === namaBarangInput.toLowerCase());
-        if (!cocokBarang) {
-            alert("Nama barang salah / tidak terdaftar di database!");
-            return;
-        }
-
-        var formPayload = {
-            namaKaryawan: document.getElementById("namaKaryawan").value,
-            idKaryawan: document.getElementById("idKaryawan").value,
-            lokasiSO: document.getElementById("lokasiSO").value,
-            tanggal: document.getElementById("tanggal").value,
-            kategoriBarang: katTerpilih,
-            kodeBarang: kodeTerpilih || "-", 
-            namaBarang: cocokBarang["Nama Item"],
-            qtyBarang: document.getElementById("qtyBarang").value,
-            satuanBarang: satTerpilih || "-",
-            alasan: document.getElementById("alasan").value
+        toggleLoader(true);
+        let payload = {
+            fitur: "INPUT_LOG",
+            namaKaryawan: userAktif.nama,
+            lokasiSO: userAktif.lokasi,
+            tanggal: tanggal,
+            kategoriBarang: document.getElementById('formKategori').value,
+            kodeBarang: document.getElementById('formKode').value,
+            namaBarang: namaBarang,
+            qtyBarang: document.getElementById('formQty').value,
+            satuanBarang: document.getElementById('formSatuan').value,
+            alasan: document.getElementById('formAlasan').value
         };
 
-        document.getElementById('page2').classList.remove('active');
-        document.getElementById('page3').classList.add('active');
-
-        fetch(urlAppsScriptPusat, {
-            method: "POST",
-            headers: {
-                "Content-Type": "text/plain;charset=utf-8"
-            },
-            body: JSON.stringify(formPayload)
-        })
-        .then(res => {
-            alert("BERHASIL! Data telah masuk ke Spreadsheet 2 (Log Permintaan).");
-            location.reload();
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Terjadi kendala koneksi saat menyimpan data.");
-            document.getElementById('page3').classList.remove('active');
-            document.getElementById('page2').classList.add('active');
-        });
+        try {
+            let res = await fetch(URL_API, { method: "POST", body: JSON.stringify(payload) });
+            let data = await res.json();
+            if(data.status === "SUCCESS") {
+                alert("Sukses! Log permintaan barang berhasil dikirim ke pusat.");
+                document.getElementById('formBarang').value = "";
+                document.getElementById('formKategori').value = "";
+                document.getElementById('formKode').value = "";
+                document.getElementById('formSatuan').value = "";
+                document.getElementById('formAlasan').value = "";
+            }
+        } catch(e) { alert("Gagal mengirim laporan."); }
+        toggleLoader(false);
     }
+
+    function logout() {
+        userAktif = null;
+        document.getElementById('loginEmail').value = "";
+        document.getElementById('loginSandi').value = "";
+        pindahPage('pageLogin');
+    }
+
+    // Klik di luar area untuk menutup autocomplete otomatis
+    document.addEventListener("click", function(e) {
+        if(e.target.id !== "formBarang") document.getElementById('barangSuggestions').style.display = "none";
+        if(e.target.id !== "regLokasi") document.getElementById('soSuggestions').style.display = "none";
+    });
 </script>
 </body>
 </html>

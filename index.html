@@ -23,6 +23,14 @@
         .suggestion-item:hover { background: #007bff; color: white; }
         .loader { text-align: center; display: none; padding: 20px; font-weight: bold; color: #555; }
         .user-info-banner { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: 500; }
+        
+        /* Gaya Khusus Halaman Sukses */
+        .success-box { text-align: center; padding: 20px 10px; }
+        .success-icon { font-size: 60px; color: #28a745; margin-bottom: 15px; }
+        .success-title { font-size: 22px; font-weight: bold; color: #28a745; margin-bottom: 10px; }
+        .success-text { font-size: 15px; color: #555; margin-bottom: 25px; line-height: 1.5; }
+        .btn-success-back { background: #28a745; }
+        .btn-success-back:hover { background: #218838; }
     </style>
 </head>
 <body>
@@ -70,7 +78,7 @@
     <div id="pageUtama" class="page">
         <h2>Form Pengambilan Barang</h2>
         <div class="user-info-banner">
-            Karyawan: <strong id="bannerNama">-</strong> | <strong id="bannerLokasi">-</strong>
+            Karyawan: <strong id="bannerNama">-</strong> | SO: <strong id="bannerLokasi">-</strong>
         </div>
         
         <input type="hidden" id="formNama">
@@ -108,19 +116,49 @@
         <button onclick="kirimFormBarang()">KIRIM PERMINTAAN</button>
         <div class="link-btn" onclick="logout()">Log Out / Keluar Akun</div>
     </div>
+
+    <div id="pageSukses" class="page">
+        <div class="success-box">
+            <div class="success-icon">🎉</div>
+            <div class="success-title">Berhasil Mengirim Data!</div>
+            <div class="success-text">
+                Log permintaan barang Anda telah sukses dicatat ke dalam sistem log pusat secara realtime.
+            </div>
+            <button class="btn-success-back" onclick="kembaliKeForm()">Buat Permintaan Baru</button>
+        </div>
+    </div>
+
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbyfZrONSv0zY5XjoCzV25cPVpT0n-SpW2PcQ5Vy8eoauUuNE5E0BaDy8NELE8EfVkaX/exec";
+    // Taruh URL Deployment Baru Lu di Sini!
+    const URL_API = "https://script.google.com/macros/s/AKfycbyCzIfw9XOFwUe-laJO00quBPb9nHV52jh2ArUL0ryrWvRVZj1iLy4kmURXC349Szpz/exec";
 
     let databaseBarang = [];
     let databaseSO = [];
+    let databaseAkun = []; // Sinkronisasi akun lokal agar login 0 detik
     let userAktif = null;
 
-    // Sinkronisasi data awal saat web pertama dibuka
+    // Load semua database esensial di background pas pertama web dibuka
     window.addEventListener('DOMContentLoaded', async () => {
-        await muatUlangSO();
+        await muatSemuaDatabase();
     });
+
+    async function muatSemuaDatabase() {
+        try {
+            // Ambil data SO
+            let resSO = await fetch(`${URL_API}?target=lokasi`);
+            let txtSO = await resSO.text();
+            databaseSO = JSON.parse(txtSO);
+            console.log("Database SO Sinkron.");
+
+            // Ambil data Akun secara pramuat (Trik kecepatan login)
+            let resAkun = await fetch(`${URL_API}?target=akun`);
+            let txtAkun = await resAkun.text();
+            databaseAkun = JSON.parse(txtAkun);
+            console.log("Database Akun Sinkron.");
+        } catch(e) { console.error("Gagal melakukan sinkronisasi data awal:", e); }
+    }
 
     function pindahPage(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -135,35 +173,15 @@
         pindahPage('pageSignUp');
         document.getElementById('regLokasi').value = "";
         document.getElementById('soSuggestions').style.display = "none";
-        if (databaseSO.length === 0) { muatUlangSO(); }
     }
 
-    // Mengambil data TEXT dari Google Apps Script lalu memparsingnya manual agar aman dari CORS
-    async function muatUlangSO() {
-        try {
-            let res = await fetch(`${URL_API}?target=lokasi`);
-            let rawText = await res.text();
-            databaseSO = JSON.parse(rawText);
-            console.log("Database SO Berhasil Di-sinkronkan:", databaseSO);
-        } catch(e) { console.error("Gagal sinkronisasi data lokasi SO:", e); }
-    }
-
-    // AUTOCOMPLETE REKOMENDASI LOKASI SO (SUDAH FIX 100%)
     function cariLokasiSO(val) {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
-        
-        if (!val || !val.trim()) { 
-            div.style.display = "none"; 
-            return; 
-        }
+        if (!val || !val.trim()) { div.style.display = "none"; return; }
 
         let kataKunci = val.toLowerCase().trim();
-
-        let hasil = databaseSO.filter(function(item) {
-            if (!item) return false;
-            return String(item).toLowerCase().includes(kataKunci);
-        });
+        let hasil = databaseSO.filter(item => item && String(item).toLowerCase().includes(kataKunci));
         
         if (hasil.length > 0) {
             div.style.display = "block";
@@ -171,19 +189,16 @@
                 let divItem = document.createElement('div');
                 divItem.className = 'suggestion-item';
                 divItem.innerText = item;
-                
                 divItem.onclick = function() {
                     document.getElementById('regLokasi').value = item;
                     div.style.display = "none";
                 };
                 div.appendChild(divItem);
             });
-        } else { 
-            div.style.display = "none"; 
-        }
+        } else { div.style.display = "none"; }
     }
 
-    // FUNGSI PROSES DAFTAR (SIGN UP)
+    // PROSES DAFTAR
     async function prosesSignUp() {
         const nama = document.getElementById('regNama').value.trim();
         let lokasiInput = document.getElementById('regLokasi').value.trim();
@@ -191,15 +206,14 @@
         const sandi = document.getElementById('regSandi').value.trim();
 
         if(!nama || !lokasiInput || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
-        
-        if (!lokasiInput.toUpperCase().startsWith("SO ")) {
-            lokasiInput = "SO " + lokasiInput;
-        }
+        if (!lokasiInput.toUpperCase().startsWith("SO ")) { lokasiInput = "SO " + lokasiInput; }
         
         let validSO = databaseSO.find(item => item.toLowerCase().trim() === lokasiInput.toLowerCase());
-        
-        if(!validSO) {
-            return alert("Lokasi SO tidak terdaftar di sistem! Harap gunakan rekomendasi yang muncul.");
+        if(!validSO) return alert("Lokasi SO tidak terdaftar di sistem!");
+
+        // Cek lokal apakah email kembar sebelum kirim server
+        if (databaseAkun.some(user => user.email === email.toLowerCase())) {
+            return alert("Email sudah terdaftar!");
         }
 
         toggleLoader(true);
@@ -208,69 +222,60 @@
                 method: "POST",
                 body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, email, sandi })
             });
-            let rawText = await res.text();
-            let data = JSON.parse(rawText);
+            let txt = await res.text();
+            let data = JSON.parse(txt);
             
             if(data.status === "SUCCESS") {
-                alert("Pendaftaran Berhasil! Silakan masuk menggunakan akun baru Anda.");
+                alert("Pendaftaran Berhasil!");
+                // Update DB Akun lokal sementara
+                databaseAkun.push({ nama, lokasi: validSO, email: email.toLowerCase(), sandi: String(sandi) });
+                
                 document.getElementById('regNama').value = "";
                 document.getElementById('regLokasi').value = "";
                 document.getElementById('regEmail').value = "";
                 document.getElementById('regSandi').value = "";
                 pindahPage('pageLogin');
-            } else {
-                alert(data.message);
             }
-        } catch(e) { alert("Terjadi masalah jaringan saat mendaftar."); }
+        } catch(e) { alert("Masalah jaringan."); }
         toggleLoader(false);
     }
 
-    // FUNGSI PROSES LOGIN (FIX INTERPRETASI DATA TEXT KE OBJECT)
-    async function prosesLogin() {
-        const email = document.getElementById('loginEmail').value.trim();
+    // PROSES LOGIN INSTAN (0 DETIK - KARENA VALIDASI LOKAL DI BROWSER!)
+    function prosesLogin() {
+        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
         const sandi = document.getElementById('loginSandi').value.trim();
 
         if(!email || !sandi) return alert("Email & Sandi wajib diisi!");
 
         toggleLoader(true);
-        try {
-            let res = await fetch(URL_API, {
-                method: "POST",
-                body: JSON.stringify({ fitur: "LOGIN", email, sandi })
-            });
+
+        // Cari kecocokan data dari database yang sudah diunduh di awal
+        let cocok = databaseAkun.find(user => user.email === email && String(user.sandi) === String(sandi));
+
+        if (cocok) {
+            userAktif = cocok;
+            document.getElementById('formNama').value = userAktif.nama;
+            document.getElementById('formLokasi').value = userAktif.lokasi;
+            document.getElementById('bannerNama').innerText = userAktif.nama;
+            document.getElementById('bannerLokasi').innerText = userAktif.lokasi;
+            document.getElementById('formTanggal').valueAsDate = new Date();
             
-            // Baca respon server sebagai text biasa terlebih dahulu untuk bypass pembatasan browser
-            let rawText = await res.text();
-            let data = JSON.parse(rawText);
-            
-            if(data.status === "SUCCESS") {
-                userAktif = data.user;
-                
-                document.getElementById('formNama').value = userAktif.nama;
-                document.getElementById('formLokasi').value = userAktif.lokasi;
-                document.getElementById('bannerNama').innerText = userAktif.nama;
-                document.getElementById('bannerLokasi').innerText = userAktif.lokasi;
-                
-                document.getElementById('formTanggal').valueAsDate = new Date();
-                
-                await muatDataBarang();
-                pindahPage('pageUtama');
-            } else {
-                alert(data.message);
-            }
-        } catch(e) { 
-            alert("Gagal masuk. Periksa kembali jaringan Anda."); 
-            console.error("Detail Error Login:", e);
+            // Muat barang di background sembari pindah halaman
+            muatDataBarang();
+            pindahPage('pageUtama');
+            toggleLoader(false);
+        } else {
+            toggleLoader(false);
+            alert("Email atau Sandi salah / Data akun belum tersinkronisasi sempurna.");
         }
-        toggleLoader(false);
     }
 
     async function muatDataBarang() {
         try {
             let res = await fetch(`${URL_API}?target=barang`);
-            let rawText = await res.text();
-            databaseBarang = JSON.parse(rawText);
-        } catch(e) { console.error("Gagal mendownload data barang", e); }
+            let txt = await res.text();
+            databaseBarang = JSON.parse(txt);
+        } catch(e) { console.error("Gagal unduh data barang", e); }
     }
 
     function cariBarang(val) {
@@ -297,11 +302,12 @@
         } else { div.style.display = "none"; }
     }
 
+    // KIRIM FORM LOG PERMINTAAN BARANG
     async function kirimFormBarang() {
         const namaBarang = document.getElementById('formBarang').value.trim();
         const tanggal = document.getElementById('formTanggal').value;
         if(!tanggal) return alert("Harap tentukan tanggal pengambilan!");
-        if(!namaBarang || !document.getElementById('formKategori').value) return alert("Pilih nama barang yang valid dari daftar!");
+        if(!namaBarang || !document.getElementById('formKategori').value) return alert("Pilih nama barang yang valid!");
 
         toggleLoader(true);
         let payload = {
@@ -319,18 +325,26 @@
 
         try {
             let res = await fetch(URL_API, { method: "POST", body: JSON.stringify(payload) });
-            let rawText = await res.text();
-            let data = JSON.parse(rawText);
+            let txt = await res.text();
+            let data = JSON.parse(txt);
             if(data.status === "SUCCESS") {
-                alert("Sukses! Log permintaan barang berhasil dikirim.");
+                // Bersihkan form
                 document.getElementById('formBarang').value = "";
                 document.getElementById('formKategori').value = "";
                 document.getElementById('formKode').value = "";
                 document.getElementById('formSatuan').value = "";
                 document.getElementById('formAlasan').value = "";
+                
+                // PINDAH KE PAGE SUKSES SESUAI REQUEST LU!
+                pindahPage('pageSukses');
             }
         } catch(e) { alert("Gagal mengirim laporan."); }
         toggleLoader(false);
+    }
+
+    function kembaliKeForm() {
+        pindahPage('pageUtama');
+        document.getElementById('formTanggal').valueAsDate = new Date();
     }
 
     function logout() {

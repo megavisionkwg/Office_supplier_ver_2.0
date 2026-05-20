@@ -270,8 +270,7 @@
         document.getElementById('page1').classList.add('active');
         window.scrollTo(0, 0);
     }
-
-    function kirimFormulir() {
+function kirimFormulir() {
     let katTerpilih = document.getElementById('kategoriSelect').value;
     let satTerpilih = document.getElementById('satuanBarang').value;
     let kodeTerpilih = document.getElementById('kodeBarang').value;
@@ -292,7 +291,6 @@
         return;
     }
 
-    // Payload data
     var formPayload = {
         namaKaryawan: document.getElementById("namaKaryawan").value,
         idKaryawan: document.getElementById("idKaryawan").value,
@@ -306,11 +304,11 @@
         alasan: document.getElementById("alasan").value
     };
 
-    // Pindah ke halaman loading screen
+    // Tampilkan screen loading memproses formulir
     document.getElementById('page2').classList.remove('active');
     document.getElementById('page3').classList.add('active');
 
-    // FIX BERHASIL: Menggunakan metode text plain bypass agar masuk tanpa hambatan CORS
+    // Trik kirim data lintas 2 spreadsheet bypass CORS Google
     fetch(urlAppsScriptPusat, {
         method: "POST",
         headers: {
@@ -318,21 +316,16 @@
         },
         body: JSON.stringify(formPayload)
     })
-    .then(res => res.json())
-    .then(respon => {
-        if(respon.status === "SUCCESS") {
-            alert("BERHASIL! Data Formulir Anda Telah Sukses Masuk ke Log Permintaan.");
-            location.reload();
-        } else {
-            alert("Gagal menyimpan data: " + respon.message);
-            document.getElementById('page3').classList.remove('active');
-            document.getElementById('page2').classList.add('active');
-        }
+    .then(res => {
+        // Jika respon berhasil masuk
+        alert("BERHASIL! Data telah masuk ke Spreadsheet 2 (Log Permintaan).");
+        location.reload();
     })
     .catch(err => {
-        // Fallback jika Google Web App sukses memproses tapi mengembalikan response opak opaque
-        alert("BERHASIL! Data Formulir Anda Telah Sukses Disimpan.");
-        location.reload();
+        console.error(err);
+        alert("Terjadi kendala koneksi, mohon cek kembali Spreadsheet 2 Anda.");
+        document.getElementById('page3').classList.remove('active');
+        document.getElementById('page2').classList.add('active');
     });
 }
 </script>

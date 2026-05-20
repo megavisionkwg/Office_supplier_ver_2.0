@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supplies Office Form - 100% Fixed</title>
+    <title>Supplies Office Form - Realtime Auto Suggestion</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -20,7 +20,10 @@
         .btn-secondary { background: #6c757d; margin-top: 8px; }
         .btn-secondary:hover { background: #545b62; }
         
-        /* DROPDOWN MENU */
+        /* STATUS INDIKATOR DATABASE */
+        .db-status { font-size: 12px; color: #666; margin-bottom: 15px; font-style: italic; text-align: center; }
+        
+        /* DROPDOWN REKOMENDASI (Auto-Positioning Fix) */
         .autocomplete-suggestions { 
             position: absolute; 
             border: 1px solid #ced4da; 
@@ -34,7 +37,7 @@
             margin-top: 2px;
             display: none;
         }
-        .suggestion-item { padding: 12px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #f8f9fa; text-align: left; }
+        .suggestion-item { padding: 12px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #f8f9fa; text-align: left; color: #333; }
         .suggestion-item:hover { background-color: #007bff; color: white; font-weight: bold; }
         
         .radio-group { display: flex; flex-wrap: wrap; gap: 12px; padding: 5px 0; }
@@ -49,6 +52,8 @@
 <body>
 
 <div class="container">
+    <div id="statusDb" class="db-status">⏳ Menghubungkan ke database Google Sheets...</div>
+
     <div id="page1" class="page active">
         <h2>Supplies Office - Tahap 1</h2>
         <div class="form-group">
@@ -61,7 +66,7 @@
         </div>
         <div class="form-group">
             <label>Lokasi SO</label>
-            <input type="text" id="lokasiSO" oninput="cariLokasiSO(this.value)" placeholder="Ketik lokasi (Contoh: Karawang)..." autocomplete="off">
+            <input type="text" id="lokasiSO" oninput="cariLokasiSO(this.value)" placeholder="Ketik lokasi (Contoh: SO DEPOK, SO BEKASI)..." autocomplete="off">
             <div id="soSuggestions" class="autocomplete-suggestions"></div>
         </div>
         <div class="form-group">
@@ -105,43 +110,54 @@
             <h2>Memproses Formulir</h2>
             <div class="spinner"></div>
             <p>Sedang mengirim data secara aman ke database pusat...</p>
-            <p class="warning-text">⚠️ JANGAN KELUAR ATAU REFRESH HALAMAN INI!<br>Jika Anda keluar sekarang, data tidak akan terkirim.</p>
+            <p class="warning-text">⚠️ JANGAN KELUAR ATAU REFRESH HALAMAN INI!</p>
         </div>
     </div>
 </div>
 
 <script>
-    // MASUKKAN URL WEB APPS SCRIPT BARU HASIL DEPLOY DI TAHAP 1
-    const urlAppsScriptPusat = "https://script.google.com/macros/s/AKfycbw4tQRTRRrtF18aWJEukVg3YlhfS0RG84sUUwpQ0mu1zHkKObvMksK6SpELU_yLVYf-/exec"; 
+    // PASTIIN URL DI BAWAH INI ADALAH URL MACROS YANG BARU LU DEPLOY!
+    const urlAppsScriptPusat = "https://script.google.com/macros/s/AKfycbxN_IwOkg_vZwhnIA9oDc1ql__LybYso9qDTZtreLb3uQo-zHGZELHstaqvelcYvOl-/exec"; 
 
     let dataAsetGoogle = [];
     let dbLokasiSO = [];
     let dbKategori = [];
     let keadaaanMengirim = false;
 
-    // AMBIL DATA LEWAT JALUR KHUSUS SCRIPT (Anti Gagal / Anti Block)
+    // FUNGSI UTAMA DOWNLOAD DATABASES
     async function muatSemuaDatabase() {
         try {
-            // Ambil Lokasi
+            document.getElementById('statusDb').innerHTML = "⏳ Sedang mengunduh database...";
+            
+            // Ambil data Lokasi SO
             let resLokasi = await fetch(`${urlAppsScriptPusat}?target=lokasi`);
             dbLokasiSO = await resLokasi.json();
 
-            // Ambil Kategori
+            // Ambil data Kategori
             let resKategori = await fetch(`${urlAppsScriptPusat}?target=kategori`);
             dbKategori = await resKategori.json();
             renderKategori();
 
-            // Ambil Barang
+            // Ambil data Daftar Barang
             let resBarang = await fetch(`${urlAppsScriptPusat}?target=barang`);
             dataAsetGoogle = await resBarang.json();
+
+            document.getElementById('statusDb').innerHTML = "✅ Database Terhubung & Siap Digunakan.";
+            document.getElementById('statusDb').style.color = "#28a745";
         } catch (error) {
-            console.log("Error Ambil Data: ", error);
+            document.getElementById('statusDb').innerHTML = "❌ Gagal sinkronisasi database! Coba refresh.";
+            document.getElementById('statusDb').style.color = "#dc3545";
+            console.error("Detail Error: ", error);
         }
     }
 
     function renderKategori() {
         const katContainer = document.getElementById('kategoriContainer');
         katContainer.innerHTML = "";
+        if(dbKategori.length === 0) {
+            katContainer.innerHTML = "<span style='color:red;'>Kategori kosong/gagal muat</span>";
+            return;
+        }
         dbKategori.forEach((kat, index) => {
             katContainer.innerHTML += `
                 <label class="radio-item">
@@ -154,25 +170,20 @@
         document.getElementById('tanggal').valueAsDate = new Date();
         muatSemuaDatabase();
 
-        window.addEventListener('beforeunload', function (e) {
-            if (keadaaanMengirim) {
-                e.preventDefault();
-                e.returnValue = 'Proses kirim sedang berjalan...';
-            }
-        });
-
+        // Tutup otomatis list rekomendasi kalau klik sembarang tempat luar form
         document.addEventListener("click", function (e) {
             if (e.target.id !== "lokasiSO") document.getElementById('soSuggestions').style.display = "none";
             if (e.target.id !== "namaBarang") document.getElementById('barangSuggestions').style.display = "none";
         });
     };
 
-    // LOGIKA DROPDOWN LOKASI SO
+    // SEARCHING AUTOMATIC LOKASI SO
     function cariLokasiSO(val) {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
         if (!val.trim()) { div.style.display = "none"; return; }
         
+        // Cari karakter yang cocok di dalam list SO
         let hasil = dbLokasiSO.filter(item => item.toLowerCase().includes(val.toLowerCase()));
         if (hasil.length > 0) {
             div.style.display = "block";
@@ -189,7 +200,7 @@
         document.getElementById('soSuggestions').style.display = "none";
     }
 
-    // LOGIKA DROPDOWN NAMA BARANG
+    // SEARCHING AUTOMATIC DAFTAR BARANG
     function cariNamaBarang(val) {
         let div = document.getElementById('barangSuggestions');
         div.innerHTML = "";
@@ -211,7 +222,7 @@
 
     function pilihBarang(nama, unit) {
         document.getElementById('namaBarang').value = nama;
-        document.getElementById('satuanBarang').value = unit;
+        document.getElementById('satuanBarang').value = unit ? unit : "Pcs"; // Fallback aman jika unit null
         document.getElementById('barangSuggestions').style.display = "none";
     }
 
@@ -225,15 +236,16 @@
             return;
         }
 
+        // COCOKAN DENGAN INPUT USER SECARA NON-SENSITIF HURUF BESAR/KECIL
         let cocokSO = dbLokasiSO.find(item => item.toLowerCase() === lokasiInput.toLowerCase());
         if (!cocokSO) {
-            alert("Lokasi SO tidak terdaftar di database resmi!");
+            alert("Lokasi SO '" + lokasiInput + "' tidak terdaftar! Silakan pilih dari rekomendasi yang muncul.");
             return;
         }
         
         document.getElementById('lokasiSO').value = cocokSO;
         document.getElementById('page1').classList.remove('active');
-        document.getElementById('page2').classList.add('active');
+        document.getElementById('page2').classList.add('add', 'active');
         window.scrollTo(0, 0);
     }
 
@@ -255,7 +267,7 @@
 
         let cocokBarang = dataAsetGoogle.find(item => item["Nama Item"].toLowerCase() === namaBarangInput.toLowerCase());
         if (!cocokBarang) {
-            alert("Nama barang salah / tidak ada dalam database!");
+            alert("Nama barang salah atau tidak ditemukan dalam database aset!");
             return;
         }
 

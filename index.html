@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supplies Office Form - Strict Mode</title>
+    <title>Supplies Office Form - Smart Fixed</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
@@ -21,10 +21,22 @@
         .btn-secondary { background: #6c757d; margin-top: 8px; }
         .btn-secondary:hover { background: #545b62; }
         
-        /* Dropdown Rekomendasi Alur Database */
-        .autocomplete-suggestions { position: absolute; border: 1px solid #ced4da; border-top: none; background: white; width: 100%; z-index: 99; max-height: 160px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 0 0 6px 6px; display: none; }
-        .suggestion-item { padding: 10px 12px; cursor: pointer; font-size: 14px; }
-        .suggestion-item:hover { background-color: #f1f7ff; color: #007bff; }
+        /* Dropdown CSS - Dipastikan Melayang Sempurna */
+        .autocomplete-suggestions { 
+            position: absolute; 
+            border: 1px solid #ced4da; 
+            background: white; 
+            width: 100%; 
+            z-index: 9999; 
+            max-height: 200px; 
+            overflow-y: auto; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            border-radius: 6px; 
+            margin-top: 2px;
+            display: none;
+        }
+        .suggestion-item { padding: 12px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #f1f1f1; }
+        .suggestion-item:hover { background-color: #f1f7ff; color: #007bff; font-weight: bold; }
         
         .radio-group { display: flex; flex-wrap: wrap; gap: 12px; padding: 5px 0; }
         .radio-item { display: flex; align-items: center; gap: 6px; background: #f8f9fa; padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; }
@@ -52,7 +64,7 @@
         </div>
         <div class="form-group">
             <label>Lokasi SO</label>
-            <input type="text" id="lokasiSO" oninput="cariLokasiSO(this.value)" placeholder="Ketik & pilih lokasi dari database..." autocomplete="off">
+            <input type="text" id="lokasiSO" onfocus="bukaSemuaSO()" oninput="cariLokasiSO(this.value)" placeholder="Klik / Ketik lokasi..." autocomplete="off">
             <div id="soSuggestions" class="autocomplete-suggestions"></div>
         </div>
         <div class="form-group">
@@ -74,7 +86,7 @@
 
         <div class="form-group">
             <label>Nama Barang</label>
-            <input type="text" id="namaBarang" oninput="cariNamaBarang(this.value)" placeholder="Ketik & pilih barang dari database..." autocomplete="off">
+            <input type="text" id="namaBarang" onfocus="bukaSemuaBarang()" oninput="cariNamaBarang(this.value)" placeholder="Klik / Ketik nama barang..." autocomplete="off">
             <div id="barangSuggestions" class="autocomplete-suggestions"></div>
         </div>
 
@@ -85,7 +97,7 @@
 
         <div class="form-group">
             <label>Satuan Barang (Unit)</label>
-            <input type="text" id="satuanBarang" readonly placeholder="Otomatis terisi berdasarkan database">
+            <input type="text" id="satuanBarang" readonly placeholder="Otomatis mengikuti database">
         </div>
 
         <div class="form-group">
@@ -108,27 +120,18 @@
 </div>
 
 <script>
-    // URL Web App Akses Database Kamu
     const urlWebAppsScript = "https://script.google.com/macros/s/AKfycbwVIbJO9DQJv8As4BmXCcnFrKMpDGi0Fv2yM0sPC1rXTbXbVJ7XqgFvTnuLYmGYV_23/exec"; 
     
-    // Tiga Pintu Database Link yang Kamu Berikan
     const urlDbBarang = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-vqAcWw8QQGMTszjk5jpAwEELejt4WaNUUMxFeQZdmv6lZ3BFJfR4Fqk58yA9WPCBiEzhd2KlCmqD/pub?gid=0&single=true&output=csv";
     const urlDbKategori = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-vqAcWw8QQGMTszjk5jpAwEELejt4WaNUUMxFeQZdmv6lZ3BFJfR4Fqk58yA9WPCBiEzhd2KlCmqD/pub?gid=966714013&single=true&output=csv";
     const urlDbLokasi = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-vqAcWw8QQGMTszjk5jpAwEELejt4WaNUUMxFeQZdmv6lZ3BFJfR4Fqk58yA9WPCBiEzhd2KlCmqD/pub?gid=1562685039&single=true&output=csv";
 
-    // Variabel Penampung Data Riil dari Spreadsheet
     let dataAsetGoogle = [];
     let dbLokasiSO = [];
     let dbKategori = [];
-
-    // Validasi Ketat: Flag untuk memeriksa apakah user benar-benar klik rekomendasi database atau nulis ngawur
-    let lokasiValid = false;
-    let barangValid = false;
     let keadaaanMengirim = false;
 
-    // Menarik seluruh data database saat web pertama dibuka
     function muatSemuaDatabase() {
-        // 1. Ambil Data Nama Item & Unit
         Papa.parse(urlDbBarang, {
             download: true,
             header: true,
@@ -137,7 +140,6 @@
             }
         });
 
-        // 2. Ambil Data Kategori Item
         Papa.parse(urlDbKategori, {
             download: true,
             header: true,
@@ -147,7 +149,6 @@
             }
         });
 
-        // 3. Ambil Data Lokasi SO
         Papa.parse(urlDbLokasi, {
             download: true,
             header: true,
@@ -172,22 +173,39 @@
         document.getElementById('tanggal').valueAsDate = new Date();
         muatSemuaDatabase();
 
-        // Mencegah user tidak sengaja keluar/refresh halaman saat Page 3 berjalan
+        // Proteksi tab browser ditutup pas loading screen
         window.addEventListener('beforeunload', function (e) {
             if (keadaaanMengirim) {
                 e.preventDefault();
                 e.returnValue = 'Data sedang dikirim, yakin ingin membatalkan?';
             }
         });
+
+        // Klik di luar dropdown untuk menutup list
+        document.addEventListener("click", function (e) {
+            if (e.target.id !== "lokasiSO") document.getElementById('soSuggestions').style.display = "none";
+            if (e.target.id !== "namaBarang") document.getElementById('barangSuggestions').style.display = "none";
+        });
     };
 
-    // ALUR DATABASE LOKASI SO (Strict Match)
-    function cariLokasiSO(val) {
-        lokasiValid = false; // Reset validasi setiap kali ada ketikan baru
+    // --- LOGIKA LOKASI SO ---
+    function bukaSemuaSO() {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
-        if (!val) { div.style.display = "none"; return; }
+        if (dbLokasiSO.length === 0) return;
         
+        div.style.display = "block";
+        dbLokasiSO.forEach(item => {
+            div.innerHTML += `<div class="suggestion-item" onclick="pilihSO('${item}')">${item}</div>`;
+        });
+    }
+
+    function cariLokasiSO(val) {
+        let div = document.getElementById('soSuggestions');
+        div.innerHTML = "";
+        if (!val) { bukaSemuaSO(); return; }
+        
+        // Menggunakan pencarian Case-Insensitive (Aman dari huruf besar/kecil)
         let hasil = dbLokasiSO.filter(item => item.toLowerCase().includes(val.toLowerCase()));
         if (hasil.length > 0) {
             div.style.display = "block";
@@ -198,18 +216,28 @@
             div.style.display = "none";
         }
     }
+
     function pilihSO(val) {
         document.getElementById('lokasiSO').value = val;
         document.getElementById('soSuggestions').style.display = "none";
-        lokasiValid = true; // User resmi memilih dari database
     }
 
-    // ALUR DATABASE NAMA BARANG & SATUAN (Strict Match)
-    function cariNamaBarang(val) {
-        barangValid = false; // Reset validasi
+    // --- LOGIKA NAMA BARANG ---
+    function bukaSemuaBarang() {
         let div = document.getElementById('barangSuggestions');
         div.innerHTML = "";
-        if (!val) { div.style.display = "none"; return; }
+        if (dataAsetGoogle.length === 0) return;
+
+        div.style.display = "block";
+        dataAsetGoogle.forEach(item => {
+            div.innerHTML += `<div class="suggestion-item" onclick="pilihBarang('${item["Nama Item"]}', '${item["Unit"]}')">${item["Nama Item"]} (${item["Asset Code"]})</div>`;
+        });
+    }
+
+    function cariNamaBarang(val) {
+        let div = document.getElementById('barangSuggestions');
+        div.innerHTML = "";
+        if (!val) { bukaSemuaBarang(); return; }
         
         let hasil = dataAsetGoogle.filter(item => item["Nama Item"] && item["Nama Item"].toLowerCase().includes(val.toLowerCase()));
         if (hasil.length > 0) {
@@ -221,27 +249,33 @@
             div.style.display = "none";
         }
     }
+
     function pilihBarang(nama, unit) {
         document.getElementById('namaBarang').value = nama;
-        document.getElementById('satuanBarang').value = unit; // Mengisi kolom satuan otomatis
+        document.getElementById('satuanBarang').value = unit;
         document.getElementById('barangSuggestions').style.display = "none";
-        barangValid = true; // User resmi memilih dari database
     }
 
-    // Navigasi Dan Proteksi Tahap 1 -> 2
+    // --- NAVIGASI VALIDASI KETAT ---
     function pindahKePage2() {
         const nama = document.getElementById('namaKaryawan').value.trim();
         const id = document.getElementById('idKaryawan').value.trim();
-        const lokasi = document.getElementById('lokasiSO').value.trim();
+        const lokasiInput = document.getElementById('lokasiSO').value.trim();
 
-        if(!nama || !id || !lokasi) {
+        if(!nama || !id || !lokasiInput) {
             alert("Harap lengkapi semua kolom di Tahap 1 terlebih dahulu!");
             return;
         }
-        if(!lokasiValid) {
-            alert("Lokasi yang Anda ketik salah/tidak terdaftar! Harap klik pilihan lokasi dari database yang muncul.");
+
+        // Cek paksa apakah teks input ada di database (Abaikan huruf besar/kecil)
+        let cocok = dbLokasiSO.find(item => item.toLowerCase() === lokasiInput.toLowerCase());
+        if (!cocok) {
+            alert("Lokasi '" + lokasiInput + "' tidak terdaftar di database! Harap klik/pilih dari opsi yang tersedia.");
             return;
         }
+        
+        // Amankan penulisan agar mengikuti standarisasi database asli (Misal: "karawang" jadi "Karawang")
+        document.getElementById('lokasiSO').value = cocok;
 
         document.getElementById('page1').classList.remove('active');
         document.getElementById('page2').classList.add('active');
@@ -254,40 +288,41 @@
         window.scrollTo(0, 0);
     }
 
-    // PROSES PINDAH KE PAGE 3 & TRANSMISI DATA KE GOOGLE SHEETS
     function kirimFormulir() {
         let katTerpilih = document.querySelector('input[name="kategori"]:checked')?.value || "";
         let satTerpilih = document.getElementById('satuanBarang').value;
         let namaBarangInput = document.getElementById('namaBarang').value.trim();
 
         if(!namaBarangInput) {
-            alert("Harap isi Nama Barang terlebih dahulu!");
-            return;
-        }
-        if(!barangValid) {
-            alert("Nama barang salah/ngawur! Anda wajib memilih nama barang resmi dari database yang muncul.");
+            alert("Harap tentukan Nama Barang terlebih dahulu!");
             return;
         }
 
-        // Kumpulkan paket data form
+        // Cek paksa kesesuaian barang dengan database aset
+        let cocokBarang = dataAsetGoogle.find(item => item["Nama Item"].toLowerCase() === namaBarangInput.toLowerCase());
+        if (!cocokBarang) {
+            alert("Nama barang '" + namaBarangInput + "' salah atau tidak ada di database aset!");
+            return;
+        }
+
+        document.getElementById('namaBarang').value = cocokBarang["Nama Item"];
+
         const formPayload = {
             namaKaryawan: document.getElementById('namaKaryawan').value,
             idKaryawan: document.getElementById('idKaryawan').value,
             lokasiSO: document.getElementById('lokasiSO').value,
             tanggal: document.getElementById('tanggal').value,
             kategoriBarang: katTerpilih,
-            namaBarang: namaBarangInput,
+            namaBarang: cocokBarang["Nama Item"],
             qtyBarang: document.getElementById('qtyBarang').value,
             satuanBarang: satTerpilih,
             alasan: document.getElementById('alasan').value
         };
 
-        // AKTIFKAN PAGE 3 (LOCK SCREEN)
         keadaaanMengirim = true;
         document.getElementById('page2').classList.remove('active');
         document.getElementById('page3').classList.add('active');
 
-        // Mengirimkan data via jalur POST ke Apps Script
         fetch(urlWebAppsScript, {
             method: "POST",
             mode: "no-cors",
@@ -295,14 +330,13 @@
             body: JSON.stringify(formPayload)
         })
         .then(() => {
-            keadaaanMengirim = false; // Matikan status proteksi halaman
-            alert("BERHASIL! Data Formulir Anda Telah Sukses Disimpan Ke Spreadsheet.");
-            location.reload(); // Reset ulang aplikasi ke Page 1
+            keadaaanMengirim = false;
+            alert("BERHASIL! Data Formulir Anda Telah Sukses Disimpan.");
+            location.reload();
         })
         .catch(err => {
             keadaaanMengirim = false;
-            alert("Koneksi bermasalah atau gagal mengirim: " + err);
-            // Jika gagal, kembalikan ke page 2 agar data tidak hilang
+            alert("Gagal mengirim: " + err);
             document.getElementById('page3').classList.remove('active');
             document.getElementById('page2').classList.add('active');
         });

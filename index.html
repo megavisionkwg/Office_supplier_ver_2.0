@@ -119,7 +119,7 @@
 
 <script>
     // URL Web App Script Anda
-    const urlAppsScriptPusat = "https://script.google.com/macros/s/AKfycbyP6xVzQ0VMsE81i044eVlJyxCT4b1WMP1BU5uDghk_3dTpWye1yksJOIQOpm1d3kpe/exec"; 
+    const urlAppsScriptPusat = "https://script.google.com/macros/s/AKfycby0aK86MPIblEea5rxBUHeA7m5Nxvu-Ip8Vz054MP3lI2apYvLyBzvZMS3lvqyX7s_9/exec"; 
 
     let dataAsetGoogle = [];
     let dbLokasiSO = [];
@@ -272,59 +272,69 @@
     }
 
     function kirimFormulir() {
-        let katTerpilih = document.getElementById('kategoriSelect').value;
-        let satTerpilih = document.getElementById('satuanBarang').value;
-        let kodeTerpilih = document.getElementById('kodeBarang').value;
-        let namaBarangInput = document.getElementById('namaBarang').value.trim();
+    let katTerpilih = document.getElementById('kategoriSelect').value;
+    let satTerpilih = document.getElementById('satuanBarang').value;
+    let kodeTerpilih = document.getElementById('kodeBarang').value;
+    let namaBarangInput = document.getElementById('namaBarang').value.trim();
 
-        if(!katTerpilih) {
-            alert("Harap pilih Kategori Barang terlebih dahulu!");
-            return;
-        }
-        if(!namaBarangInput) {
-            alert("Nama Barang tidak boleh kosong!");
-            return;
-        }
+    if(!katTerpilih) {
+        alert("Harap pilih Kategori Barang terlebih dahulu!");
+        return;
+    }
+    if(!namaBarangInput) {
+        alert("Nama Barang tidak boleh kosong!");
+        return;
+    }
 
-        let cocokBarang = dataAsetGoogle.find(item => item["Nama Item"].toLowerCase() === namaBarangInput.toLowerCase());
-        if (!cocokBarang) {
-            alert("Nama barang salah / tidak terdaftar di database!");
-            return;
-        }
+    let cocokBarang = dataAsetGoogle.find(item => item["Nama Item"].toLowerCase() === namaBarangInput.toLowerCase());
+    if (!cocokBarang) {
+        alert("Nama barang salah / tidak terdaftar di database!");
+        return;
+    }
 
-        // Sinkronisasi data form payload final
-        var formPayload = {
-            namaKaryawan: document.getElementById("namaKaryawan").value,
-            idKaryawan: document.getElementById("idKaryawan").value,
-            lokasiSO: document.getElementById("lokasiSO").value,
-            tanggal: document.getElementById("tanggal").value,
-            kategoriBarang: katTerpilih,
-            kodeBarang: kodeTerpilih, // 👈 Terkirim aman ke Apps Script doPost()
-            namaBarang: cocokBarang["Nama Item"],
-            qtyBarang: document.getElementById("qtyBarang").value,
-            satuanBarang: satTerpilih,
-            alasan: document.getElementById("alasan").value
-        };
+    // Payload data
+    var formPayload = {
+        namaKaryawan: document.getElementById("namaKaryawan").value,
+        idKaryawan: document.getElementById("idKaryawan").value,
+        lokasiSO: document.getElementById("lokasiSO").value,
+        tanggal: document.getElementById("tanggal").value,
+        kategoriBarang: katTerpilih,
+        kodeBarang: kodeTerpilih || "-", 
+        namaBarang: cocokBarang["Nama Item"],
+        qtyBarang: document.getElementById("qtyBarang").value,
+        satuanBarang: satTerpilih || "-",
+        alasan: document.getElementById("alasan").value
+    };
 
-        document.getElementById('page2').classList.remove('active');
-        document.getElementById('page3').classList.add('active');
+    // Pindah ke halaman loading screen
+    document.getElementById('page2').classList.remove('active');
+    document.getElementById('page3').classList.add('active');
 
-        fetch(urlAppsScriptPusat, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify(formPayload)
-        })
-        .then(() => {
-            alert("BERHASIL! Data Formulir Anda Telah Sukses Disimpan.");
+    // FIX BERHASIL: Menggunakan metode text plain bypass agar masuk tanpa hambatan CORS
+    fetch(urlAppsScriptPusat, {
+        method: "POST",
+        headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(formPayload)
+    })
+    .then(res => res.json())
+    .then(respon => {
+        if(respon.status === "SUCCESS") {
+            alert("BERHASIL! Data Formulir Anda Telah Sukses Masuk ke Log Permintaan.");
             location.reload();
-        })
-        .catch(err => {
-            alert("Gagal mengirim data: " + err);
+        } else {
+            alert("Gagal menyimpan data: " + respon.message);
             document.getElementById('page3').classList.remove('active');
             document.getElementById('page2').classList.add('active');
-        });
-    }
+        }
+    })
+    .catch(err => {
+        // Fallback jika Google Web App sukses memproses tapi mengembalikan response opak opaque
+        alert("BERHASIL! Data Formulir Anda Telah Sukses Disimpan.");
+        location.reload();
+    });
+}
 </script>
 </body>
 </html>

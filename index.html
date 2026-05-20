@@ -24,7 +24,7 @@
         .loader { text-align: center; display: none; padding: 20px; font-weight: bold; color: #555; }
         .user-info-banner { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: 500; }
         
-        /* Gaya Khusus Halaman Sukses */
+        /* Style Halaman Sukses */
         .success-box { text-align: center; padding: 20px 10px; }
         .success-icon { font-size: 60px; color: #28a745; margin-bottom: 15px; }
         .success-title { font-size: 22px; font-weight: bold; color: #28a745; margin-bottom: 10px; }
@@ -127,38 +127,20 @@
             <button class="btn-success-back" onclick="kembaliKeForm()">Buat Permintaan Baru</button>
         </div>
     </div>
-
 </div>
 
 <script>
-    // Taruh URL Deployment Baru Lu di Sini!
-    const URL_API = "https://script.google.com/macros/s/AKfycbyCzIfw9XOFwUe-laJO00quBPb9nHV52jh2ArUL0ryrWvRVZj1iLy4kmURXC349Szpz/exec";
+    // MASUKKAN URL NEW DEPLOYMENT LU DI SINI
+    const URL_API = "https://script.google.com/macros/s/AKfycbz5Mb2xYO9YJh1BgvCqxXMVfzOlStm08D5ScU2svmL8s7N9mtphYKVjkjC5LDCDmVa-/exec";
 
     let databaseBarang = [];
     let databaseSO = [];
-    let databaseAkun = []; // Sinkronisasi akun lokal agar login 0 detik
     let userAktif = null;
 
-    // Load semua database esensial di background pas pertama web dibuka
+    // Hanya muat data lokasi SO di awal agar tidak membebani koneksi browser
     window.addEventListener('DOMContentLoaded', async () => {
-        await muatSemuaDatabase();
+        await muatUlangSO();
     });
-
-    async function muatSemuaDatabase() {
-        try {
-            // Ambil data SO
-            let resSO = await fetch(`${URL_API}?target=lokasi`);
-            let txtSO = await resSO.text();
-            databaseSO = JSON.parse(txtSO);
-            console.log("Database SO Sinkron.");
-
-            // Ambil data Akun secara pramuat (Trik kecepatan login)
-            let resAkun = await fetch(`${URL_API}?target=akun`);
-            let txtAkun = await resAkun.text();
-            databaseAkun = JSON.parse(txtAkun);
-            console.log("Database Akun Sinkron.");
-        } catch(e) { console.error("Gagal melakukan sinkronisasi data awal:", e); }
-    }
 
     function pindahPage(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -169,12 +151,23 @@
         document.getElementById('loader').style.display = show ? 'block' : 'none';
     }
 
+    async function muatUlangSO() {
+        try {
+            let res = await fetch(`${URL_API}?target=lokasi`);
+            let txt = await res.text();
+            databaseSO = JSON.parse(txt);
+            console.log("Database SO Sinkron:", databaseSO);
+        } catch(e) { console.error("Gagal sinkronisasi data SO:", e); }
+    }
+
     function bukaPageSignUp() {
         pindahPage('pageSignUp');
         document.getElementById('regLokasi').value = "";
         document.getElementById('soSuggestions').style.display = "none";
+        if(databaseSO.length === 0) { muatUlangSO(); }
     }
 
+    // AUTOCOMPLETE SO (TOLERAN HURUF KECIL/BESAR)
     function cariLokasiSO(val) {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
@@ -198,7 +191,7 @@
         } else { div.style.display = "none"; }
     }
 
-    // PROSES DAFTAR
+    // FUNGSI SIGN UP
     async function prosesSignUp() {
         const nama = document.getElementById('regNama').value.trim();
         let lokasiInput = document.getElementById('regLokasi').value.trim();
@@ -206,15 +199,13 @@
         const sandi = document.getElementById('regSandi').value.trim();
 
         if(!nama || !lokasiInput || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
-        if (!lokasiInput.toUpperCase().startsWith("SO ")) { lokasiInput = "SO " + lokasiInput; }
+        
+        if (!lokasiInput.toUpperCase().startsWith("SO ")) {
+            lokasiInput = "SO " + lokasiInput;
+        }
         
         let validSO = databaseSO.find(item => item.toLowerCase().trim() === lokasiInput.toLowerCase());
-        if(!validSO) return alert("Lokasi SO tidak terdaftar di sistem!");
-
-        // Cek lokal apakah email kembar sebelum kirim server
-        if (databaseAkun.some(user => user.email === email.toLowerCase())) {
-            return alert("Email sudah terdaftar!");
-        }
+        if(!validSO) return alert("Lokasi SO tidak terdaftar! Gunakan rekomendasi yang muncul.");
 
         toggleLoader(true);
         try {
@@ -226,48 +217,54 @@
             let data = JSON.parse(txt);
             
             if(data.status === "SUCCESS") {
-                alert("Pendaftaran Berhasil!");
-                // Update DB Akun lokal sementara
-                databaseAkun.push({ nama, lokasi: validSO, email: email.toLowerCase(), sandi: String(sandi) });
-                
+                alert("Pendaftaran Berhasil! Silakan login.");
                 document.getElementById('regNama').value = "";
                 document.getElementById('regLokasi').value = "";
                 document.getElementById('regEmail').value = "";
                 document.getElementById('regSandi').value = "";
                 pindahPage('pageLogin');
+            } else {
+                alert(data.message);
             }
-        } catch(e) { alert("Masalah jaringan."); }
+        } catch(e) { alert("Gagal mendaftar, periksa koneksi."); }
         toggleLoader(false);
     }
 
-    // PROSES LOGIN INSTAN (0 DETIK - KARENA VALIDASI LOKAL DI BROWSER!)
-    function prosesLogin() {
-        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    // FUNGSI LOGIN (KEMBALI KE SERVER - AMAN & AKURAT)
+    async function prosesLogin() {
+        const email = document.getElementById('loginEmail').value.trim();
         const sandi = document.getElementById('loginSandi').value.trim();
 
         if(!email || !sandi) return alert("Email & Sandi wajib diisi!");
 
         toggleLoader(true);
-
-        // Cari kecocokan data dari database yang sudah diunduh di awal
-        let cocok = databaseAkun.find(user => user.email === email && String(user.sandi) === String(sandi));
-
-        if (cocok) {
-            userAktif = cocok;
-            document.getElementById('formNama').value = userAktif.nama;
-            document.getElementById('formLokasi').value = userAktif.lokasi;
-            document.getElementById('bannerNama').innerText = userAktif.nama;
-            document.getElementById('bannerLokasi').innerText = userAktif.lokasi;
-            document.getElementById('formTanggal').valueAsDate = new Date();
+        try {
+            let res = await fetch(URL_API, {
+                method: "POST",
+                body: JSON.stringify({ fitur: "LOGIN", email, sandi })
+            });
             
-            // Muat barang di background sembari pindah halaman
-            muatDataBarang();
-            pindahPage('pageUtama');
-            toggleLoader(false);
-        } else {
-            toggleLoader(false);
-            alert("Email atau Sandi salah / Data akun belum tersinkronisasi sempurna.");
+            let txt = await res.text();
+            let data = JSON.parse(txt);
+            
+            if(data.status === "SUCCESS") {
+                userAktif = data.user;
+                
+                document.getElementById('formNama').value = userAktif.nama;
+                document.getElementById('formLokasi').value = userAktif.lokasi;
+                document.getElementById('bannerNama').innerText = userAktif.nama;
+                document.getElementById('bannerLokasi').innerText = userAktif.lokasi;
+                document.getElementById('formTanggal').valueAsDate = new Date();
+                
+                await muatDataBarang();
+                pindahPage('pageUtama');
+            } else {
+                alert(data.message);
+            }
+        } catch(e) { 
+            alert("Gagal masuk. Periksa kembali jaringan Anda."); 
         }
+        toggleLoader(false);
     }
 
     async function muatDataBarang() {
@@ -302,7 +299,6 @@
         } else { div.style.display = "none"; }
     }
 
-    // KIRIM FORM LOG PERMINTAAN BARANG
     async function kirimFormBarang() {
         const namaBarang = document.getElementById('formBarang').value.trim();
         const tanggal = document.getElementById('formTanggal').value;
@@ -328,14 +324,13 @@
             let txt = await res.text();
             let data = JSON.parse(txt);
             if(data.status === "SUCCESS") {
-                // Bersihkan form
                 document.getElementById('formBarang').value = "";
                 document.getElementById('formKategori').value = "";
                 document.getElementById('formKode').value = "";
                 document.getElementById('formSatuan').value = "";
                 document.getElementById('formAlasan').value = "";
                 
-                // PINDAH KE PAGE SUKSES SESUAI REQUEST LU!
+                // MASUK KE PAGE BERHASIL SESUAI REQUEST
                 pindahPage('pageSukses');
             }
         } catch(e) { alert("Gagal mengirim laporan."); }

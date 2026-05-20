@@ -111,20 +111,15 @@
 </div>
 
 <script>
-    // URL API Google Apps Script Lu yang Valid
     const URL_API = "https://script.google.com/macros/s/AKfycbz5Mb2xYO9YJh1BgvCqxXMVfzOlStm08D5ScU2svmL8s7N9mtphYKVjkjC5LDCDmVa-/exec";
 
     let databaseBarang = [];
     let databaseSO = [];
     let userAktif = null;
 
-    // Load Data Lokasi SO di background sejak pertama kali web dibuka
+    // Sinkronisasi data awal saat web pertama dibuka
     window.addEventListener('DOMContentLoaded', async () => {
-        try {
-            let res = await fetch(`${URL_API}?target=lokasi`);
-            databaseSO = await res.json();
-            console.log("Database SO Berhasil Dimuat:", databaseSO);
-        } catch(e) { console.error("Gagal inisialisasi daftar lokasi SO", e); }
+        await muatUlangSO();
     });
 
     function pindahPage(pageId) {
@@ -138,20 +133,22 @@
 
     function bukaPageSignUp() {
         pindahPage('pageSignUp');
-        // Bersihkan data input lama saat halaman dibuka kembali
         document.getElementById('regLokasi').value = "";
         document.getElementById('soSuggestions').style.display = "none";
         if (databaseSO.length === 0) { muatUlangSO(); }
     }
 
+    // Mengambil data TEXT dari Google Apps Script lalu memparsingnya manual agar aman dari CORS
     async function muatUlangSO() {
         try {
             let res = await fetch(`${URL_API}?target=lokasi`);
-            databaseSO = await res.json();
-        } catch(e) { console.error(e); }
+            let rawText = await res.text();
+            databaseSO = JSON.parse(rawText);
+            console.log("Database SO Berhasil Di-sinkronkan:", databaseSO);
+        } catch(e) { console.error("Gagal sinkronisasi data lokasi SO:", e); }
     }
 
-    // AUTOCOMPLETE REKOMENDASI LOKASI SO (SUDAH FIX 100% SENSITIVITAS HURUF)
+    // AUTOCOMPLETE REKOMENDASI LOKASI SO (SUDAH FIX 100%)
     function cariLokasiSO(val) {
         let div = document.getElementById('soSuggestions');
         div.innerHTML = "";
@@ -163,7 +160,6 @@
 
         let kataKunci = val.toLowerCase().trim();
 
-        // Filter super toleran: memaksa pencocokan huruf kecil semua agar ketemu
         let hasil = databaseSO.filter(function(item) {
             if (!item) return false;
             return String(item).toLowerCase().includes(kataKunci);
@@ -171,13 +167,11 @@
         
         if (hasil.length > 0) {
             div.style.display = "block";
-            // Batasi maksimal 5 rekomendasi teratas yang tampil agar rapi
             hasil.slice(0, 5).forEach(item => {
                 let divItem = document.createElement('div');
                 divItem.className = 'suggestion-item';
                 divItem.innerText = item;
                 
-                // Ketika rekomendasi diklik, langsung set value kolom dan tutup dropdown
                 divItem.onclick = function() {
                     document.getElementById('regLokasi').value = item;
                     div.style.display = "none";
@@ -198,16 +192,14 @@
 
         if(!nama || !lokasiInput || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
         
-        // Auto-Correct: Jika user lupa mengetik kata "SO " di depan, sistem bantu menambahkan secara otomatis
         if (!lokasiInput.toUpperCase().startsWith("SO ")) {
             lokasiInput = "SO " + lokasiInput;
         }
         
-        // Validasi database internal (Case-Insensitive)
         let validSO = databaseSO.find(item => item.toLowerCase().trim() === lokasiInput.toLowerCase());
         
         if(!validSO) {
-            return alert("Lokasi SO tidak terdaftar di sistem! Harap ketik dengan benar (Contoh: SO Karawang) dan klik rekomendasi yang muncul.");
+            return alert("Lokasi SO tidak terdaftar di sistem! Harap gunakan rekomendasi yang muncul.");
         }
 
         toggleLoader(true);
@@ -216,7 +208,9 @@
                 method: "POST",
                 body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, email, sandi })
             });
-            let data = await res.json();
+            let rawText = await res.text();
+            let data = JSON.parse(rawText);
+            
             if(data.status === "SUCCESS") {
                 alert("Pendaftaran Berhasil! Silakan masuk menggunakan akun baru Anda.");
                 document.getElementById('regNama').value = "";
@@ -231,7 +225,7 @@
         toggleLoader(false);
     }
 
-    // FUNGSI PROSES LOGIN
+    // FUNGSI PROSES LOGIN (FIX INTERPRETASI DATA TEXT KE OBJECT)
     async function prosesLogin() {
         const email = document.getElementById('loginEmail').value.trim();
         const sandi = document.getElementById('loginSandi').value.trim();
@@ -244,7 +238,11 @@
                 method: "POST",
                 body: JSON.stringify({ fitur: "LOGIN", email, sandi })
             });
-            let data = await res.json();
+            
+            // Baca respon server sebagai text biasa terlebih dahulu untuk bypass pembatasan browser
+            let rawText = await res.text();
+            let data = JSON.parse(rawText);
+            
             if(data.status === "SUCCESS") {
                 userAktif = data.user;
                 
@@ -260,14 +258,18 @@
             } else {
                 alert(data.message);
             }
-        } catch(e) { alert("Gagal masuk. Periksa kembali jaringan Anda."); }
+        } catch(e) { 
+            alert("Gagal masuk. Periksa kembali jaringan Anda."); 
+            console.error("Detail Error Login:", e);
+        }
         toggleLoader(false);
     }
 
     async function muatDataBarang() {
         try {
             let res = await fetch(`${URL_API}?target=barang`);
-            databaseBarang = await res.json();
+            let rawText = await res.text();
+            databaseBarang = JSON.parse(rawText);
         } catch(e) { console.error("Gagal mendownload data barang", e); }
     }
 
@@ -317,7 +319,8 @@
 
         try {
             let res = await fetch(URL_API, { method: "POST", body: JSON.stringify(payload) });
-            let data = await res.json();
+            let rawText = await res.text();
+            let data = JSON.parse(rawText);
             if(data.status === "SUCCESS") {
                 alert("Sukses! Log permintaan barang berhasil dikirim.");
                 document.getElementById('formBarang').value = "";
@@ -337,7 +340,6 @@
         pindahPage('pageLogin');
     }
 
-    // Menutup dropdown otomatis jika klik di luar kolom input
     document.addEventListener("click", function(e) {
         if(e.target.id !== "formBarang") document.getElementById('barangSuggestions').style.display = "none";
         if(e.target.id !== "regLokasi") document.getElementById('soSuggestions').style.display = "none";

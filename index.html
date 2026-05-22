@@ -6,7 +6,8 @@
     <title>Supplies Office System</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; padding: 20px; color: #333; }
-        .container { max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
+        .container { max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; transition: max-width 0.3s ease; }
+        .wide-container { max-width: 850px; }
         h2 { text-align: center; color: #007bff; margin-top: 0; margin-bottom: 20px; }
         .page { display: none; }
         .active { display: block; }
@@ -14,23 +15,33 @@
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         input:focus, select:focus, textarea:focus { border-color: #007bff; outline: none; }
-        input[readonly] { background-color: #e9ecef; color: #495057; cursor: not-allowed; }
+        .readonly-bg { background-color: #e9ecef; color: #495057; cursor: not-allowed; }
         button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0056b3; }
         .link-btn { text-align: center; margin-top: 15px; font-size: 14px; color: #007bff; cursor: pointer; text-decoration: underline; }
-        .autocomplete-suggestions { position: absolute; border: 1px solid #ccc; background: white; width: 100%; z-index: 99; max-height: 150px; overflow-y: auto; display: none; border-radius: 0 0 5px 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f1f1; text-align: left; }
+        
+        /* Auto-suggestion styling */
+        .autocomplete-suggestions { position: absolute; border: 1px solid #ccc; background: white; width: 100%; z-index: 999; max-height: 150px; overflow-y: auto; display: none; border-radius: 0 0 5px 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f1f1; text-align: left; font-size: 14px; }
         .suggestion-item:hover { background: #007bff; color: white; }
+        
         .user-info-banner { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: 500; }
         
-        /* CSS ANIMASI LINGKARAN MUTAR-MUTAR (SPINNER LOADER) */
-        .loader-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); border-radius: 10px; z-index: 999; flex-direction: column; justify-content: center; align-items: center; }
+        /* LAYOUT TABEL MULTI-ITEM ATK */
+        .table-responsive { width: 100%; overflow-x: auto; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; }
+        th { background-color: #f8f9fa; color: #333; }
+        .btn-add-row { background: #28a745; margin-bottom: 15px; width: auto; padding: 8px 15px; font-size: 14px; }
+        .btn-add-row:hover { background: #218838; }
+        .btn-del { background: #dc3545; padding: 6px 10px; font-size: 12px; margin-top: 0; width: auto; }
+        .btn-del:hover { background: #bd2130; }
+        
+        /* CSS LOADER SPINNER MUTAR */
+        .loader-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); border-radius: 10px; z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         .loader-text { font-weight: bold; color: #555; font-size: 15px; text-align: center; }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Style Halaman Sukses */
         .success-box { text-align: center; padding: 20px 10px; }
@@ -43,7 +54,7 @@
 </head>
 <body>
 
-<div class="container">
+<div id="mainContainer" class="container">
     <div id="loaderOverlay" class="loader-overlay">
         <div class="spinner"></div>
         <div class="loader-text">Memproses data ke server...<br>Mohon tunggu sebentar</div>
@@ -66,8 +77,8 @@
     <div id="pageSignUp" class="page">
         <h2>Pendaftaran Pengguna</h2>
         <div class="form-group">
-            <label>Nama Karyawan</label>
-            <input type="text" id="regNama" placeholder="Nama lengkap Anda">
+            <label>Nama Pengelola Akun</label>
+            <input type="text" id="regNama" placeholder="Nama lengkap pengelola">
         </div>
         <div class="form-group">
             <label>Lokasi SO</label>
@@ -89,42 +100,44 @@
     <div id="pageUtama" class="page">
         <h2>Form Pengambilan Barang</h2>
         <div class="user-info-banner">
-            Karyawan: <strong id="bannerNama">-</strong> | SO: <strong id="bannerLokasi">-</strong>
+            Akun Login: <strong id="bannerEmail">-</strong> | Lokasi Pusat: <strong id="bannerLokasi">-</strong>
         </div>
         
-        <input type="hidden" id="formNama">
-        <input type="hidden" id="formLokasi">
+        <div class="form-group">
+            <label>Nama Karyawan Yang Mengambil</label>
+            <input type="text" id="formNama" placeholder="Ketik nama karyawan pengguna barang...">
+        </div>
 
         <div class="form-group">
             <label>Tanggal Pengambilan</label>
             <input type="date" id="formTanggal">
         </div>
-        <div class="form-group">
-            <label>Cari Nama Barang</label>
-            <input type="text" id="formBarang" oninput="cariBarang(this.value)" placeholder="Ketik nama barang..." autocomplete="off">
-            <div id="barangSuggestions" class="autocomplete-suggestions"></div>
+
+        <h3 style="margin-top: 25px; margin-bottom: 10px; font-size: 16px; color:#333;">Daftar Item ATK / Supplies:</h3>
+        <button type="button" class="btn-add-row" onclick="tambahBarisTabel()">+ Tambah Baris Item</button>
+        
+        <div class="table-responsive">
+            <table id="tabelAtk">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Nama Barang</th>
+                        <th style="width: 20%;">Kategori / Kode</th>
+                        <th style="width: 15%;">Qty</th>
+                        <th style="width: 15%;">Satuan</th>
+                        <th style="width: 10%;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyTabelAtk">
+                    </tbody>
+            </table>
         </div>
+
         <div class="form-group">
-            <label>Kategori Barang</label>
-            <input type="text" id="formKategori" readonly placeholder="Otomatis terisi">
-        </div>
-        <div class="form-group">
-            <label>Kode Barang</label>
-            <input type="text" id="formKode" readonly placeholder="Otomatis terisi">
-        </div>
-        <div class="form-group">
-            <label>Quantity (Qty)</label>
-            <input type="number" id="formQty" min="1" value="1">
-        </div>
-        <div class="form-group">
-            <label>Satuan</label>
-            <input type="text" id="formSatuan" readonly placeholder="Otomatis terisi">
-        </div>
-        <div class="form-group">
-            <label>Alasan Pengambilan</label>
+            <label>Alasan Pengambilan (Untuk Semua Item)</label>
             <textarea id="formAlasan" rows="3" placeholder="Alasan keperluan barang..."></textarea>
         </div>
-        <button onclick="kirimFormBarang()">KIRIM PERMINTAAN</button>
+        
+        <button onclick="kirimFormBarang()">KIRIM SEMUA PERMINTAAN</button>
         <div class="link-btn" onclick="logout()">Log Out / Keluar Akun</div>
     </div>
 
@@ -133,7 +146,7 @@
             <div class="success-icon">🎉</div>
             <div class="success-title">Berhasil Mengirim Data!</div>
             <div class="success-text">
-                Log permintaan barang Anda telah sukses dicatat ke dalam sistem log pusat secara realtime.
+                Semua daftar item log permintaan barang Anda telah sukses dimasukkan ke database log pusat secara berurutan.
             </div>
             <button class="btn-success-back" onclick="kembaliKeForm()">Buat Permintaan Baru</button>
         </div>
@@ -141,23 +154,29 @@
 </div>
 
 <script>
-    // URL API Google Apps Script Terakhir Lu
-    const URL_API = "https://script.google.com/macros/s/AKfycbxYlLwNQsRsIe1DVQ8lQ2UcAq0rDClDNc08ClovEIGI8M7_54b-pbTEepIA9wlqc-MP/exec";
+    // Taruh URL API New Deployment lu yang baru di sini!
+    const URL_API = "https://script.google.com/macros/s/AKfycbzBncO2n2mN-FaCDJvMYqyrHicAhXHfpTJop4t3GV1gK1EqM9buzAVicG0lhacQo-RA/exec";
 
     let databaseBarang = [];
     let databaseSO = [];
     let userAktif = null;
+    let indeksBaris = 0; // Penghitung ID baris tabel unik
 
     window.addEventListener('DOMContentLoaded', async () => {
         await muatUlangSO();
     });
 
     function pindahPage(pageId) {
+        const container = document.getElementById('mainContainer');
+        if (pageId === 'pageUtama') {
+            container.classList.add('wide-container'); // Lebarkan container jika masuk halaman tabel form
+        } else {
+            container.classList.remove('wide-container');
+        }
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
     }
 
-    // Fungsi Toggle Loader Baru (Fleksibel Flexbox)
     function toggleLoader(show) {
         document.getElementById('loaderOverlay').style.display = show ? 'flex' : 'none';
     }
@@ -167,7 +186,6 @@
             let res = await fetch(`${URL_API}?target=lokasi`);
             let txt = await res.text();
             databaseSO = JSON.parse(txt);
-            console.log("Database SO Sinkron.");
         } catch(e) { console.error("Gagal sinkronisasi data SO:", e); }
     }
 
@@ -208,11 +226,10 @@
         const sandi = document.getElementById('regSandi').value.trim();
 
         if(!nama || !lokasiInput || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
-        
         if (!lokasiInput.toUpperCase().startsWith("SO ")) { lokasiInput = "SO " + lokasiInput; }
         
         let validSO = databaseSO.find(item => item.toLowerCase().trim() === lokasiInput.toLowerCase());
-        if(!validSO) return alert("Lokasi SO tidak terdaftar! Gunakan rekomendasi yang muncul.");
+        if(!validSO) return alert("Lokasi SO tidak terdaftar!");
 
         toggleLoader(true);
         try {
@@ -220,25 +237,18 @@
                 method: "POST",
                 body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, email, sandi })
             });
-            let txt = await res.text();
-            let data = JSON.parse(txt);
-            
+            let data = await res.json();
             if(data.status === "SUCCESS") {
                 alert("Pendaftaran Berhasil! Silakan login.");
-                document.getElementById('regNama').value = "";
-                document.getElementById('regLokasi').value = "";
-                document.getElementById('regEmail').value = "";
-                document.getElementById('regSandi').value = "";
                 pindahPage('pageLogin');
             } else { alert(data.message); }
-        } catch(e) { alert("Gagal mendaftar, periksa koneksi."); }
+        } catch(e) { alert("Gagal mendaftar."); }
         toggleLoader(false);
     }
 
     async function prosesLogin() {
         const email = document.getElementById('loginEmail').value.trim();
         const sandi = document.getElementById('loginSandi').value.trim();
-
         if(!email || !sandi) return alert("Email & Sandi wajib diisi!");
 
         toggleLoader(true);
@@ -247,23 +257,24 @@
                 method: "POST",
                 body: JSON.stringify({ fitur: "LOGIN", email, sandi })
             });
-            
-            let txt = await res.text();
-            let data = JSON.parse(txt);
+            let data = await res.json();
             
             if(data.status === "SUCCESS") {
                 userAktif = data.user;
-                
-                document.getElementById('formNama').value = userAktif.nama;
-                document.getElementById('formLokasi').value = userAktif.lokasi;
-                document.getElementById('bannerNama').innerText = userAktif.nama;
+                document.getElementById('formNama').value = userAktif.nama; // Default nama pengelola, bisa diubah
+                document.getElementById('bannerEmail').innerText = userAktif.email;
                 document.getElementById('bannerLokasi').innerText = userAktif.lokasi;
                 document.getElementById('formTanggal').valueAsDate = new Date();
                 
                 await muatDataBarang();
+                
+                // Set isi awal tabel: bersihkan & buat 1 baris kosong pertama
+                document.getElementById('bodyTabelAtk').innerHTML = "";
+                tambahBarisTabel();
+                
                 pindahPage('pageUtama');
             } else { alert(data.message); }
-        } catch(e) { alert("Gagal masuk. Periksa kembali jaringan Anda."); }
+        } catch(e) { alert("Gagal masuk. Periksa kembali API/Jaringan."); }
         toggleLoader(false);
     }
 
@@ -275,23 +286,62 @@
         } catch(e) { console.error("Gagal unduh data barang", e); }
     }
 
-    function cariBarang(val) {
-        let div = document.getElementById('barangSuggestions');
+    // MANAJEMEN BARIS TABEL DINAMIS
+    function tambahBarisTabel() {
+        indeksBaris++;
+        const tbody = document.getElementById('bodyTabelAtk');
+        const tr = document.createElement('tr');
+        tr.id = `row_${indeksBaris}`;
+        
+        tr.innerHTML = `
+            <td style="position: relative;">
+                <input type="text" id="namaBarang_${indeksBaris}" oninput="cariBarangTabel(${indeksBaris}, this.value)" placeholder="Ketik nama item..." autocomplete="off">
+                <div id="suggest_${indeksBaris}" class="autocomplete-suggestions"></div>
+            </td>
+            <td>
+                <input type="text" id="kategori_${indeksBaris}" class="readonly-bg" readonly placeholder="Kategori">
+                <input type="hidden" id="kode_${indeksBaris}">
+            </td>
+            <td>
+                <input type="number" id="qty_${indeksBaris}" min="1" value="1">
+            </td>
+            <td>
+                <input type="text" id="satuan_${indeksBaris}" class="readonly-bg" readonly placeholder="Satuan">
+            </td>
+            <td>
+                <button type="button" class="btn-del" onclick="hapusBarisTabel(${indeksBaris})">Hapus</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function hapusBarisTabel(id) {
+        const tbody = document.getElementById('bodyTabelAtk');
+        if(tbody.rows.length <= 1) {
+            alert("Minimal harus ada 1 item barang di dalam tabel!");
+            return;
+        }
+        const row = document.getElementById(`row_${id}`);
+        if(row) row.remove();
+    }
+
+    function cariBarangTabel(id, val) {
+        let div = document.getElementById(`suggest_${id}`);
         div.innerHTML = "";
         if (!val.trim()) { div.style.display = "none"; return; }
 
         let hasil = databaseBarang.filter(item => item["Nama Item"].toLowerCase().includes(val.toLowerCase()));
         if (hasil.length > 0) {
             div.style.display = "block";
-            hasil.forEach(item => {
+            hasil.slice(0, 10).forEach(item => {
                 let divItem = document.createElement('div');
                 divItem.className = 'suggestion-item';
-                divItem.innerHTML = `<strong>${item["Nama Item"]}</strong> <small style='color:#777;'>(${item["Asset Code"]})</small>`;
+                divItem.innerHTML = `<strong>${item["Nama Item"]}</strong> <small style='color:#666;'>[${item["Unit"]}]</small>`;
                 divItem.onclick = () => {
-                    document.getElementById('formBarang').value = item["Nama Item"];
-                    document.getElementById('formKategori').value = item["Asset Code"];
-                    document.getElementById('formKode').value = item["Kode Item"];
-                    document.getElementById('formSatuan').value = item["Unit"];
+                    document.getElementById(`namaBarang_${id}`).value = item["Nama Item"];
+                    document.getElementById(`kategori_${id}`).value = item["Asset Code"];
+                    document.getElementById(`kode_${id}`).value = item["Kode Item"];
+                    document.getElementById(`satuan_${id}`).value = item["Unit"];
                     div.style.display = "none";
                 };
                 div.appendChild(divItem);
@@ -299,45 +349,70 @@
         } else { div.style.display = "none"; }
     }
 
+    // PROSES KIRIM DATA MASSAL (ARRAY OBJEK)
     async function kirimFormBarang() {
-        const namaBarang = document.getElementById('formBarang').value.trim();
+        const namaKaryawan = document.getElementById('formNama').value.trim();
         const tanggal = document.getElementById('formTanggal').value;
+        const alasan = document.getElementById('formAlasan').value.trim();
+        const tbody = document.getElementById('bodyTabelAtk');
+
+        if(!namaKaryawan) return alert("Harap isi nama karyawan yang mengambil barang!");
         if(!tanggal) return alert("Harap tentukan tanggal pengambilan!");
-        if(!namaBarang || !document.getElementById('formKategori').value) return alert("Pilih nama barang yang valid!");
+
+        // Ekstraksi data dari tiap baris tabel aktif
+        let kumpulanItem = [];
+        let barisValid = true;
+
+        for (let i = 0; i < tbody.rows.length; i++) {
+            let rowId = tbody.rows[i].id.split('_')[1];
+            let namaBarang = document.getElementById(`namaBarang_${rowId}`).value.trim();
+            let kategoriBarang = document.getElementById(`kategori_${rowId}`).value;
+            let kodeBarang = document.getElementById(`kode_${rowId}`).value;
+            let qtyBarang = document.getElementById(`qty_${rowId}`).value;
+            let satuanBarang = document.getElementById(`satuan_${rowId}`).value;
+
+            if(!namaBarang || !kategoriBarang) {
+                barisValid = false;
+                break;
+            }
+
+            kumpulanItem.push({
+                kategoriBarang: kategoriBarang,
+                kodeBarang: kodeBarang,
+                namaBarang: namaBarang,
+                qtyBarang: qtyBarang,
+                satuanBarang: satuanBarang
+            });
+        }
+
+        if(!barisValid || kumpulanItem.length === 0) {
+            return alert("Ada baris item barang yang kosong atau tidak valid. Silakan periksa kembali!");
+        }
 
         toggleLoader(true);
         let payload = {
             fitur: "INPUT_LOG",
-            namaKaryawan: userAktif.nama,
+            namaKaryawan: namaKaryawan,
             lokasiSO: userAktif.lokasi,
             tanggal: tanggal,
-            kategoriBarang: document.getElementById('formKategori').value,
-            kodeBarang: document.getElementById('formKode').value,
-            namaBarang: namaBarang,
-            qtyBarang: document.getElementById('formQty').value,
-            satuanBarang: document.getElementById('formSatuan').value,
-            alasan: document.getElementById('formAlasan').value
+            alasan: alasan,
+            items: kumpulanItem // Array dikirim utuh ke backend .gs
         };
 
         try {
             let res = await fetch(URL_API, { method: "POST", body: JSON.stringify(payload) });
-            let txt = await res.text();
-            let data = JSON.parse(txt);
+            let data = await res.json();
             if(data.status === "SUCCESS") {
-                document.getElementById('formBarang').value = "";
-                document.getElementById('formKategori').value = "";
-                document.getElementById('formKode').value = "";
-                document.getElementById('formSatuan').value = "";
                 document.getElementById('formAlasan').value = "";
-                
-                // Menuju Halaman Sukses
                 pindahPage('pageSukses');
-            }
-        } catch(e) { alert("Gagal mengirim laporan."); }
+            } else { alert("Server gagal memproses: " + data.message); }
+        } catch(e) { alert("Gagal mengirim laporan, cek koneksi."); }
         toggleLoader(false);
     }
 
     function kembaliKeForm() {
+        document.getElementById('bodyTabelAtk').innerHTML = "";
+        tambahBarisTabel();
         pindahPage('pageUtama');
         document.getElementById('formTanggal').valueAsDate = new Date();
     }
@@ -349,9 +424,14 @@
         pindahPage('pageLogin');
     }
 
+    // Menutup box pencarian otomatis saat layar diklik sembarang tempat
     document.addEventListener("click", function(e) {
-        if(e.target.id !== "formBarang") document.getElementById('barangSuggestions').style.display = "none";
-        if(e.target.id !== "regLokasi") document.getElementById('soSuggestions').style.display = "none";
+        if(!e.target.id.startsWith("namaBarang_")) {
+            document.querySelectorAll('.autocomplete-suggestions').forEach(div => div.style.display = "none");
+        }
+        if(e.target.id !== "regLokasi") {
+            document.getElementById('soSuggestions').style.display = "none";
+        }
     });
 </script>
 </body>

@@ -20,23 +20,25 @@
         button:hover { background: #0056b3; }
         .link-btn { text-align: center; margin-top: 15px; font-size: 14px; color: #007bff; cursor: pointer; text-decoration: underline; }
         
-        /* OPTIMASI BOX AUTO-SUGGESTION BIAR LEGA DI HP */
+        /* FIX TOTAL: DROP-DOWN MELAYANG BEBAS KELUAR TABEL */
         .autocomplete-suggestions { 
             position: absolute; 
+            top: 100%;
+            left: 0;
             border: 2px solid #007bff; 
             background: white; 
             width: 100%; 
-            min-width: 250px; /* Biar melebar ke kanan kalau di kolom tabel sempit */
-            z-index: 9999ef; /* Super tinggi agar melayang di atas baris tabel lain */
-            max-height: 250px; /* Lebih tinggi supaya puas scrolling-nya */
+            min-width: 280px; 
+            z-index: 999999 !important; 
+            max-height: 280px; 
             overflow-y: auto; 
             display: none; 
-            border-radius: 5px; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2); 
-            -webkit-overflow-scrolling: touch; /* Kebal swipe macet di browser iOS/Android */
+            border-radius: 6px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25); 
+            -webkit-overflow-scrolling: touch; 
         }
         .suggestion-item { 
-            padding: 12px 10px; /* Area sentuh diperluas biar gak salah pencet di HP */
+            padding: 12px 10px; 
             cursor: pointer; 
             border-bottom: 1px solid #eee; 
             text-align: left; 
@@ -48,9 +50,14 @@
         
         .user-info-banner { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: 500; }
         
-        /* LAYOUT TABEL MULTI-ITEM ATK */
-        .table-responsive { width: 100%; overflow-x: auto; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        table { width: 100%; border-collapse: collapse; min-width: 650px; }
+        /* PERBAIKAN STRUKTUR AREA TABEL AGAR MELEBAR KE BAWAH */
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: visible; 
+            overflow-y: visible; 
+            margin-bottom: 35px; /* Memberi ruang luas untuk drop-down baris terakhir */
+        }
+        table { width: 100%; border-collapse: collapse; overflow: visible !important; }
         th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; }
         th { background-color: #f8f9fa; color: #333; }
         .btn-add-row { background: #28a745; margin-bottom: 15px; width: auto; padding: 8px 15px; font-size: 14px; }
@@ -58,13 +65,11 @@
         .btn-del { background: #dc3545; padding: 6px 10px; font-size: 12px; margin-top: 0; width: auto; }
         .btn-del:hover { background: #bd2130; }
         
-        /* CSS LOADER SPINNER MUTAR */
         .loader-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); border-radius: 10px; z-index: 10000; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         .loader-text { font-weight: bold; color: #555; font-size: 15px; text-align: center; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Style Halaman Sukses */
         .success-box { text-align: center; padding: 20px 10px; }
         .success-icon { font-size: 60px; color: #28a745; margin-bottom: 15px; }
         .success-title { font-size: 22px; font-weight: bold; color: #28a745; margin-bottom: 10px; }
@@ -153,7 +158,7 @@
             </table>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" style="margin-top: 20px;">
             <label>Alasan Pengambilan (Untuk Semua Item)</label>
             <textarea id="formAlasan" rows="3" placeholder="Alasan keperluan barang..."></textarea>
         </div>
@@ -175,7 +180,7 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbxYlLwNQsRsIe1DVQ8lQ2UcAq0rDClDNc08ClovEIGI8M7_54b-pbTEepIA9wlqc-MP/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbz7X0aJHgOn_CUqH3Pp7Wa3Mus-fvTdYjinoRwlhr7hyrngFHzatQZY8GGSIY7IXP1K/exec";
 
     let databaseBarang = [];
     let databaseSO = [];
@@ -293,7 +298,7 @@
                 
                 pindahPage('pageUtama');
             } else { alert(data.message); }
-        } catch(e) { alert("Gagal masuk. Periksa kembali API/Jaringan."); }
+        } catch(e) { alert("Email atau Sandi salah / Data akun belum tersinkronisasi sempurna."); }
         toggleLoader(false);
     }
 
@@ -310,9 +315,10 @@
         const tbody = document.getElementById('bodyTabelAtk');
         const tr = document.createElement('tr');
         tr.id = `row_${indeksBaris}`;
+        tr.style.overflow = "visible";
         
         tr.innerHTML = `
-            <td style="position: relative;">
+            <td style="position: relative; overflow: visible;">
                 <input type="text" id="namaBarang_${indeksBaris}" oninput="cariBarangTabel(${indeksBaris}, this.value)" placeholder="Ketik nama item..." autocomplete="off">
                 <div id="suggest_${indeksBaris}" class="autocomplete-suggestions"></div>
             </td>
@@ -348,10 +354,9 @@
         div.innerHTML = "";
         if (!val.trim()) { div.style.display = "none"; return; }
 
-        let hasil = databaseBarang.filter(item => item["Nama Item"].toLowerCase().includes(val.toLowerCase()));
+        let hasil = databaseBarang.filter(item => item["Nama Item"] && item["Nama Item"].toLowerCase().includes(val.toLowerCase()));
         if (hasil.length > 0) {
             div.style.display = "block";
-            // Membatasi maksimum 20 rekomendasi agar daftar gulung lebih panjang dan memuaskan
             hasil.slice(0, 20).forEach(item => {
                 let divItem = document.createElement('div');
                 divItem.className = 'suggestion-item';
@@ -442,11 +447,12 @@
     }
 
     document.addEventListener("click", function(e) {
-        if(!e.target.id.startsWith("namaBarang_")) {
+        if(e.target && !e.target.id.startsWith("namaBarang_")) {
             document.querySelectorAll('.autocomplete-suggestions').forEach(div => div.style.display = "none");
         }
-        if(e.target.id !== "regLokasi") {
-            document.getElementById('soSuggestions').style.display = "none";
+        if(e.target && e.target.id !== "regLokasi") {
+            const soDiv = document.getElementById('soSuggestions');
+            if(soDiv) soDiv.style.display = "none";
         }
     });
 </script>

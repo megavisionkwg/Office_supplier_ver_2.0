@@ -20,16 +20,37 @@
         button:hover { background: #0056b3; }
         .link-btn { text-align: center; margin-top: 15px; font-size: 14px; color: #007bff; cursor: pointer; text-decoration: underline; }
         
-        /* Auto-suggestion styling */
-        .autocomplete-suggestions { position: absolute; border: 1px solid #ccc; background: white; width: 100%; z-index: 999; max-height: 150px; overflow-y: auto; display: none; border-radius: 0 0 5px 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f1f1; text-align: left; font-size: 14px; }
+        /* OPTIMASI BOX AUTO-SUGGESTION BIAR LEGA DI HP */
+        .autocomplete-suggestions { 
+            position: absolute; 
+            border: 2px solid #007bff; 
+            background: white; 
+            width: 100%; 
+            min-width: 250px; /* Biar melebar ke kanan kalau di kolom tabel sempit */
+            z-index: 9999ef; /* Super tinggi agar melayang di atas baris tabel lain */
+            max-height: 250px; /* Lebih tinggi supaya puas scrolling-nya */
+            overflow-y: auto; 
+            display: none; 
+            border-radius: 5px; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2); 
+            -webkit-overflow-scrolling: touch; /* Kebal swipe macet di browser iOS/Android */
+        }
+        .suggestion-item { 
+            padding: 12px 10px; /* Area sentuh diperluas biar gak salah pencet di HP */
+            cursor: pointer; 
+            border-bottom: 1px solid #eee; 
+            text-align: left; 
+            font-size: 14px; 
+            line-height: 1.4;
+        }
         .suggestion-item:hover { background: #007bff; color: white; }
+        .suggestion-item:last-child { border-bottom: none; }
         
         .user-info-banner { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: 500; }
         
         /* LAYOUT TABEL MULTI-ITEM ATK */
         .table-responsive { width: 100%; overflow-x: auto; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        table { width: 100%; border-collapse: collapse; min-width: 650px; }
         th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; }
         th { background-color: #f8f9fa; color: #333; }
         .btn-add-row { background: #28a745; margin-bottom: 15px; width: auto; padding: 8px 15px; font-size: 14px; }
@@ -38,7 +59,7 @@
         .btn-del:hover { background: #bd2130; }
         
         /* CSS LOADER SPINNER MUTAR */
-        .loader-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); border-radius: 10px; z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
+        .loader-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); border-radius: 10px; z-index: 10000; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         .loader-text { font-weight: bold; color: #555; font-size: 15px; text-align: center; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -120,15 +141,15 @@
             <table id="tabelAtk">
                 <thead>
                     <tr>
-                        <th style="width: 40%;">Nama Barang</th>
+                        <th style="width: 45%;">Nama Barang</th>
                         <th style="width: 20%;">Kategori / Kode</th>
-                        <th style="width: 15%;">Qty</th>
-                        <th style="width: 15%;">Satuan</th>
+                        <th style="width: 12%;">Qty</th>
+                        <th style="width: 13%;">Satuan</th>
                         <th style="width: 10%;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="bodyTabelAtk">
-                    </tbody>
+                </tbody>
             </table>
         </div>
 
@@ -154,13 +175,12 @@
 </div>
 
 <script>
-    // Taruh URL API New Deployment lu yang baru di sini!
-    const URL_API = "https://script.google.com/macros/s/AKfycbzBncO2n2mN-FaCDJvMYqyrHicAhXHfpTJop4t3GV1gK1EqM9buzAVicG0lhacQo-RA/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbxYlLwNQsRsIe1DVQ8lQ2UcAq0rDClDNc08ClovEIGI8M7_54b-pbTEepIA9wlqc-MP/exec";
 
     let databaseBarang = [];
     let databaseSO = [];
     let userAktif = null;
-    let indeksBaris = 0; // Penghitung ID baris tabel unik
+    let indeksBaris = 0;
 
     window.addEventListener('DOMContentLoaded', async () => {
         await muatUlangSO();
@@ -169,7 +189,7 @@
     function pindahPage(pageId) {
         const container = document.getElementById('mainContainer');
         if (pageId === 'pageUtama') {
-            container.classList.add('wide-container'); // Lebarkan container jika masuk halaman tabel form
+            container.classList.add('wide-container');
         } else {
             container.classList.remove('wide-container');
         }
@@ -261,14 +281,13 @@
             
             if(data.status === "SUCCESS") {
                 userAktif = data.user;
-                document.getElementById('formNama').value = userAktif.nama; // Default nama pengelola, bisa diubah
+                document.getElementById('formNama').value = userAktif.nama;
                 document.getElementById('bannerEmail').innerText = userAktif.email;
                 document.getElementById('bannerLokasi').innerText = userAktif.lokasi;
                 document.getElementById('formTanggal').valueAsDate = new Date();
                 
                 await muatDataBarang();
                 
-                // Set isi awal tabel: bersihkan & buat 1 baris kosong pertama
                 document.getElementById('bodyTabelAtk').innerHTML = "";
                 tambahBarisTabel();
                 
@@ -286,7 +305,6 @@
         } catch(e) { console.error("Gagal unduh data barang", e); }
     }
 
-    // MANAJEMEN BARIS TABEL DINAMIS
     function tambahBarisTabel() {
         indeksBaris++;
         const tbody = document.getElementById('bodyTabelAtk');
@@ -333,10 +351,11 @@
         let hasil = databaseBarang.filter(item => item["Nama Item"].toLowerCase().includes(val.toLowerCase()));
         if (hasil.length > 0) {
             div.style.display = "block";
-            hasil.slice(0, 10).forEach(item => {
+            // Membatasi maksimum 20 rekomendasi agar daftar gulung lebih panjang dan memuaskan
+            hasil.slice(0, 20).forEach(item => {
                 let divItem = document.createElement('div');
                 divItem.className = 'suggestion-item';
-                divItem.innerHTML = `<strong>${item["Nama Item"]}</strong> <small style='color:#666;'>[${item["Unit"]}]</small>`;
+                divItem.innerHTML = `<strong>${item["Nama Item"]}</strong> <br><small style='color:#007bff; font-weight:bold;'>Kode: ${item["Asset Code"]}</small> <small style='color:#666;'>(${item["Unit"]})</small>`;
                 divItem.onclick = () => {
                     document.getElementById(`namaBarang_${id}`).value = item["Nama Item"];
                     document.getElementById(`kategori_${id}`).value = item["Asset Code"];
@@ -349,7 +368,6 @@
         } else { div.style.display = "none"; }
     }
 
-    // PROSES KIRIM DATA MASSAL (ARRAY OBJEK)
     async function kirimFormBarang() {
         const namaKaryawan = document.getElementById('formNama').value.trim();
         const tanggal = document.getElementById('formTanggal').value;
@@ -359,7 +377,6 @@
         if(!namaKaryawan) return alert("Harap isi nama karyawan yang mengambil barang!");
         if(!tanggal) return alert("Harap tentukan tanggal pengambilan!");
 
-        // Ekstraksi data dari tiap baris tabel aktif
         let kumpulanItem = [];
         let barisValid = true;
 
@@ -396,7 +413,7 @@
             lokasiSO: userAktif.lokasi,
             tanggal: tanggal,
             alasan: alasan,
-            items: kumpulanItem // Array dikirim utuh ke backend .gs
+            items: kumpulanItem
         };
 
         try {
@@ -424,7 +441,6 @@
         pindahPage('pageLogin');
     }
 
-    // Menutup box pencarian otomatis saat layar diklik sembarang tempat
     document.addEventListener("click", function(e) {
         if(!e.target.id.startsWith("namaBarang_")) {
             document.querySelectorAll('.autocomplete-suggestions').forEach(div => div.style.display = "none");

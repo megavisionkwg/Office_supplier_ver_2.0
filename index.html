@@ -137,12 +137,12 @@
         </div>
 
         <h3 style="margin-top: 25px; margin-bottom: 10px; font-size: 16px; color:#333;">Daftar Item ATK / Supplies:</h3>
-        
-        </div>
 
         <div class="control-flex" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
             <button type="button" class="btn-add-row" onclick="tambahBarisTabel()">+ Tambah Baris Item</button>
             <div id="hitungItemBadge" class="badge-counter">Jumlah Item: 1 / Max 10 Items</div>
+        </div>
+        <div class="checkbox-container">
             <input type="checkbox" id="chkSamaAlasan" onchange="toggleLogikaAlasanSamakan()">
             <label for="chkSamaAlasan">Alasan untuk semua item sama</label>
         </div>
@@ -178,7 +178,7 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbyTXJ0VNZOzt2Nh1eQrMdZFqhN7-3ZYdfP-JRR8yJIe15XoR168TCd-FA27TREVi6E6/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbwJHmW9aVMtArvIS2XDo7hpEhbs7thChHT4TXuf1HEHlTWMs9-Pz8XaEM-bHbP_qVHM/exec";
     let databaseBarang = [];
     let databaseSO = [];
     let userAktif = null;

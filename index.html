@@ -104,11 +104,12 @@
         </div>
         <div class="form-group">
             <label>Divisi</label>
-            <input type="text" id="regDivisi" placeholder="Contoh: Purchasing, PMC, Production...">
+            <input type="text" id="regDivisi" oninput="cariDivisiRekomendasi(this.value)" placeholder="Ketik divisi (Contoh: inst...)" autocomplete="off">
+            <div id="divisiSuggestions" class="autocomplete-suggestions"></div>
         </div>
         <div class="form-group">
-            <label>Position (Jabatan)</label>
-            <input type="text" id="regJabatan" placeholder="Contoh: Staff, Supervisor, Section Head...">
+            <label>Department</label>
+            <input type="text" id="regDepartment" class="readonly-bg" readonly placeholder="Otomatis terisi saat memilih divisi...">
         </div>
         <div class="form-group">
             <label>Akun Email</label>
@@ -135,12 +136,12 @@
 
         <div style="display: flex; gap: 15px; margin-bottom: 0;">
             <div class="form-group" style="flex: 1;">
-                <label>Divisi</label>
-                <input type="text" id="formDivisi" class="readonly-bg" readonly placeholder="Divisi...">
+                <label>Department</label>
+                <input type="text" id="formDepartment" class="readonly-bg" readonly placeholder="Department...">
             </div>
             <div class="form-group" style="flex: 1;">
-                <label>Position (Jabatan)</label>
-                <input type="text" id="formJabatan" class="readonly-bg" readonly placeholder="Position...">
+                <label>Divisi</label>
+                <input type="text" id="formDivisi" class="readonly-bg" readonly placeholder="Divisi...">
             </div>
         </div>
 
@@ -190,9 +191,10 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbwJHmW9aVMtArvIS2XDo7hpEhbs7thChHT4TXuf1HEHlTWMs9-Pz8XaEM-bHbP_qVHM/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbzhvRU-p9bhHjI8fDZXIh4ZEsT4y_OrIYspJhkWmJhdCjpjyfcFpiJiiCUjqsl5wCZm/exec";
     let databaseBarang = [];
     let databaseSO = [];
+    let databaseDept = []; // Tempat menyimpan data sheet Dept
     let userAktif = null;
     let indeksBaris = 0;
 
@@ -228,13 +230,27 @@
         } catch(e) { console.error("Gagal sinkronisasi data SO:", e); }
     }
 
-    function bukaPageSignUp() {
+    // Ambil data sheet Dept saat pendaftaran dibuka
+    async function muatUlangDept() {
+        try {
+            let res = await fetch(`${URL_API}?target=dept`);
+            let txt = await res.text();
+            databaseDept = JSON.parse(txt);
+        } catch(e) { console.error("Gagal sinkronisasi data Dept:", e); }
+    }
+
+    async function bukaPageSignUp() {
         pindahPage('pageSignUp');
         document.getElementById('regLokasi').value = "";
         document.getElementById('regDivisi').value = "";
-        document.getElementById('regJabatan').value = "";
+        document.getElementById('regDepartment').value = "";
         document.getElementById('soSuggestions').style.display = "none";
-        if(databaseSO.length === 0) { muatUlangSO(); }
+        document.getElementById('divisiSuggestions').style.display = "none";
+        
+        toggleLoader(true);
+        if(databaseSO.length === 0) await muatUlangSO();
+        if(databaseDept.length === 0) await muatUlangDept();
+        toggleLoader(false);
     }
 
     function cariLokasiSO(val) {
@@ -259,15 +275,40 @@
         } else { div.style.display = "none"; }
     }
 
+    // FITUR REKOMENDASI DIVISI & OTOMATIS COCOKKAN DEPARTMENT
+    function cariDivisiRekomendasi(val) {
+        let div = document.getElementById('divisiSuggestions');
+        div.innerHTML = "";
+        if (!val || !val.trim()) { div.style.display = "none"; return; }
+
+        let kataKunci = val.toLowerCase().trim();
+        let hasil = databaseDept.filter(item => item && item.divisi && item.divisi.toLowerCase().includes(kataKunci));
+        
+        if (hasil.length > 0) {
+            div.style.display = "block";
+            hasil.slice(0, 5).forEach(item => {
+                let divItem = document.createElement('div');
+                divItem.className = 'suggestion-item';
+                divItem.innerHTML = `<strong>${item.divisi}</strong><br><small style="color: #666;">Dept: ${item.department}</small>`;
+                divItem.onclick = function() {
+                    document.getElementById('regDivisi').value = item.divisi;
+                    document.getElementById('regDepartment').value = item.department; // Otomatis mengisi kolom Department
+                    div.style.display = "none";
+                };
+                div.appendChild(divItem);
+            });
+        } else { div.style.display = "none"; }
+    }
+
     async function prosesSignUp() {
         const nama = document.getElementById('regNama').value.trim();
         let lokasiInput = document.getElementById('regLokasi').value.trim();
         const divisi = document.getElementById('regDivisi').value.trim();
-        const jabatan = document.getElementById('regJabatan').value.trim();
+        const department = document.getElementById('regDepartment').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const sandi = document.getElementById('regSandi').value.trim();
         
-        if(!nama || !lokasiInput || !divisi || !jabatan || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
+        if(!nama || !lokasiInput || !divisi || !department || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
         if (!lokasiInput.toUpperCase().startsWith("SO ")) { lokasiInput = "SO " + lokasiInput; }
         
         let validSO = databaseSO.find(item => item.toLowerCase().trim() === lokasiInput.toLowerCase());
@@ -277,7 +318,7 @@
         try {
             let res = await fetch(URL_API, {
                 method: "POST",
-                body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, divisi, jabatan, email, sandi })
+                body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, divisi, department, email, sandi })
             });
             let data = await res.json();
             if(data.status === "SUCCESS") {
@@ -308,8 +349,8 @@
                 
                 // MENGISI DATA USER OTOMATIS DI FORM AMBIL BARANG
                 document.getElementById('formNama').value = userAktif.nama;
+                document.getElementById('formDepartment').value = userAktif.department || "-";
                 document.getElementById('formDivisi').value = userAktif.divisi || "-";
-                document.getElementById('formJabatan').value = userAktif.jabatan || "-";
                 
                 document.getElementById('formTanggal').valueAsDate = new Date();
                 await muatDataBarang(userAktif.token, userAktif.lokasi);
@@ -517,6 +558,10 @@
         if(e.target && e.target.id !== "regLokasi") {
             const soDiv = document.getElementById('soSuggestions');
             if(soDiv) soDiv.style.display = "none";
+        }
+        if(e.target && e.target.id !== "regDivisi") {
+            const divDiv = document.getElementById('divisiSuggestions');
+            if(divDiv) divDiv.style.display = "none";
         }
     });
 </script>

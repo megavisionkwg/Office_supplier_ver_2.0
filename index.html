@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supplies Office System</title>
-<style>
+    <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; padding: 20px; color: #333; }
         .container { max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; transition: max-width 0.3s ease; }
         .wide-container { max-width: 850px; }
@@ -20,49 +20,15 @@
         button:hover { background: #0056b3; }
         .link-btn { text-align: center; margin-top: 15px; font-size: 14px; color: #007bff; cursor: pointer; text-decoration: underline; }
         
-        /* DROP-DOWN MELAYANG BEBAS KELUAR TABEL */
         .autocomplete-suggestions { 
-            position: absolute;
-            top: 100%;
-            left: 0;
-            border: 2px solid #007bff; 
-            background: white; 
-            width: 100%; 
-            min-width: 280px; 
-            z-index: 999999 !important; 
-            max-height: 280px;
-            overflow-y: auto; 
-            display: none; 
-            border-radius: 6px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.25); 
-            -webkit-overflow-scrolling: touch;
+            position: absolute; top: 100%; left: 0; border: 2px solid #007bff; background: white; width: 100%; min-width: 280px; z-index: 999999 !important; max-height: 280px; overflow-y: auto; display: none; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); -webkit-overflow-scrolling: touch;
         }
-        .suggestion-item { 
-            padding: 12px 10px;
-            cursor: pointer; 
-            border-bottom: 1px solid #eee; 
-            text-align: left; 
-            font-size: 14px; 
-            line-height: 1.4;
-        }
+        .suggestion-item { padding: 12px 10px; cursor: pointer; border-bottom: 1px solid #eee; text-align: left; font-size: 14px; line-height: 1.4; }
         .suggestion-item:hover { background: #007bff; color: white; }
         .suggestion-item:last-child { border-bottom: none; }
         
         .user-info-banner { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: 500; }
-        
-        /* CSS Badge Counter disesuaikan tingginya dengan tombol */
-        .badge-counter { 
-            background: #fff3cd; 
-            color: #856404; 
-            padding: 8px 12px; 
-            border-radius: 5px; 
-            font-size: 14px; 
-            display: inline-flex; 
-            align-items: center;
-            font-weight: bold; 
-            margin-bottom: 0; 
-            border: 1px solid #ffeeba; 
-        }
+        .badge-counter { background: #fff3cd; color: #856404; padding: 8px 12px; border-radius: 5px; font-size: 14px; display: inline-flex; align-items: center; font-weight: bold; margin-bottom: 0; border: 1px solid #ffeeba; }
         
         .table-responsive { width: 100%; overflow-x: visible; overflow-y: visible; margin-bottom: 35px; }
         table { width: 100%; border-collapse: collapse; overflow: visible !important; }
@@ -84,72 +50,21 @@
         .btn-success-back { background: #28a745; }
         .btn-success-back:hover { background: #218838; }
 
-        /* ==========================================================================
-           💥 CSS RESPONSIVE KHUSUS LAYAR HP (OTOMATIS AKTIF DI BAWAH LEBAR 768px)
-           ========================================================================== */
         @media screen and (max-width: 768px) {
             body { padding: 10px; }
             .container, .wide-container { max-width: 100% !important; padding: 15px; margin: 10px auto; }
-            
-            /* Sembunyikan kepala tabel asli PC agar tidak merusak baris HP */
             table#tabelAtk thead { display: none !important; }
-            
-            /* Ubah susunan baris tr menjadi satu kotak kartu/card mandiri */
-            #bodyTabelAtk tr {
-                display: block !important;
-                background: #ffffff;
-                border: 2px solid #dee2e6;
-                border-radius: 8px;
-                padding: 12px;
-                margin-bottom: 15px;
-                position: relative;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            }
-            
-            /* Paksa semua kolom (td) turun ke bawah dan melebar penuh */
-            #bodyTabelAtk td {
-                display: block !important;
-                width: 100% !important;
-                padding: 6px 0 !important;
-                border: none !important;
-                box-sizing: border-box;
-            }
-
-            /* Membuat judul penanda otomatis di atas tiap kolom input khusus di HP */
+            #bodyTabelAtk tr { display: block !important; background: #ffffff; border: 2px solid #dee2e6; border-radius: 8px; padding: 12px; margin-bottom: 15px; position: relative; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+            #bodyTabelAtk td { display: block !important; width: 100% !important; padding: 6px 0 !important; border: none !important; box-sizing: border-box; }
             #bodyTabelAtk td:nth-child(1)::before { content: "Nama Barang:"; font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #495057; }
             #bodyTabelAtk td:nth-child(2)::before { content: "Kategori / Kode:"; font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #495057; }
             #bodyTabelAtk td:nth-child(3)::before { content: "Jumlah (Qty):"; font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #495057; }
             #bodyTabelAtk td:nth-child(4)::before { content: "Satuan:"; font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #495057; }
-
-            /* Pastikan kotak inputan menjadi luas dan teks di dalamnya tidak terpotong */
-            #bodyTabelAtk td input {
-                width: 100% !important;
-                padding: 10px !important;
-                font-size: 14px !important;
-            }
-
-            /* Merapikan kolom ke-5 (Tombol Hapus) di posisi bawah kartu */
-            #bodyTabelAtk td:nth-child(5) {
-                text-align: right;
-                margin-top: 8px;
-                border-top: 1px dashed #ddd !important;
-                padding-top: 10px !important;
-            }
+            #bodyTabelAtk td input { width: 100% !important; padding: 10px !important; font-size: 14px !important; }
+            #bodyTabelAtk td:nth-child(5) { text-align: right; margin-top: 8px; border-top: 1px dashed #ddd !important; padding-top: 10px !important; }
             .btn-del { width: 100% !important; padding: 10px !important; font-size: 14px !important; }
-            
-            /* Dropdown rekomendasi otomatis melebar penuh mengikuti kolom nama barang di HP */
-            .autocomplete-suggestions {
-                width: 100% !important;
-                min-width: 100% !important;
-                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            }
-            
-            /* Pengaman pembungkus Tombol Tambah & Kotak Jumlah Item agar bertumpuk rapi di HP */
-            div[style*="display: flex"] {
-                flex-direction: column !important;
-                align-items: stretch !important;
-                gap: 10px !important;
-            }
+            .autocomplete-suggestions { width: 100% !important; min-width: 100% !important; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+            div[style*="display: flex"] { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
             .btn-add-row, .badge-counter { width: 100% !important; text-align: center; justify-content: center; }
         }
     </style>
@@ -188,6 +103,14 @@
             <div id="soSuggestions" class="autocomplete-suggestions"></div>
         </div>
         <div class="form-group">
+            <label>Divisi</label>
+            <input type="text" id="regDivisi" placeholder="Contoh: Purchasing, PMC, Production...">
+        </div>
+        <div class="form-group">
+            <label>Position (Jabatan)</label>
+            <input type="text" id="regJabatan" placeholder="Contoh: Staff, Supervisor, Section Head...">
+        </div>
+        <div class="form-group">
             <label>Akun Email</label>
             <input type="email" id="regEmail" placeholder="contoh@gmail.com">
         </div>
@@ -207,7 +130,18 @@
         
         <div class="form-group">
             <label>Nama Karyawan Yang Mengambil</label>
-            <input type="text" id="formNama" placeholder="Ketik nama karyawan pengguna barang...">
+            <input type="text" id="formNama" class="readonly-bg" readonly placeholder="Nama karyawan...">
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 0;">
+            <div class="form-group" style="flex: 1;">
+                <label>Divisi</label>
+                <input type="text" id="formDivisi" class="readonly-bg" readonly placeholder="Divisi...">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Position (Jabatan)</label>
+                <input type="text" id="formJabatan" class="readonly-bg" readonly placeholder="Position...">
+            </div>
         </div>
 
         <div class="form-group">
@@ -217,10 +151,9 @@
 
         <h3 style="margin-top: 25px; margin-bottom: 10px; font-size: 16px; color:#333;">Daftar Item ATK / Supplies:</h3>
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-            <button type="button" class="btn-add-row" onclick="tambahBarisTabel()" style="margin-bottom: 0; width: auto;">+ Tambah Baris Item</button>
-            <div id="hitungItemBadge" class="badge-counter" style="margin-bottom: 0;">Jumlah Item: 1 / Max 10 Items</div>
+            <button type="button" class="btn-add-row" onclick="tambahBarisTabel()">+ Tambah Baris Item</button>
+            <div id="hitungItemBadge" class="badge-counter">Jumlah Item: 1 / Max 10 Items</div>
         </div>
-
         
         <div class="table-responsive">
             <table id="tabelAtk">
@@ -250,9 +183,7 @@
         <div class="success-box">
             <div class="success-icon">🎉</div>
             <div class="success-title">Berhasil Mengirim Data!</div>
-            <div class="success-text">
-                Semua daftar item log permintaan barang Anda telah sukses dimasukkan ke database log pusat secara berurutan.
-            </div>
+            <div class="success-text">Semua daftar item log permintaan barang Anda telah sukses dimasukkan ke database log pusat secara berurutan.</div>
             <button class="btn-success-back" onclick="kembaliKeForm()">Buat Permintaan Baru</button>
         </div>
     </div>
@@ -300,6 +231,8 @@
     function bukaPageSignUp() {
         pindahPage('pageSignUp');
         document.getElementById('regLokasi').value = "";
+        document.getElementById('regDivisi').value = "";
+        document.getElementById('regJabatan').value = "";
         document.getElementById('soSuggestions').style.display = "none";
         if(databaseSO.length === 0) { muatUlangSO(); }
     }
@@ -329,9 +262,12 @@
     async function prosesSignUp() {
         const nama = document.getElementById('regNama').value.trim();
         let lokasiInput = document.getElementById('regLokasi').value.trim();
+        const divisi = document.getElementById('regDivisi').value.trim();
+        const jabatan = document.getElementById('regJabatan').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const sandi = document.getElementById('regSandi').value.trim();
-        if(!nama || !lokasiInput || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
+        
+        if(!nama || !lokasiInput || !divisi || !jabatan || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
         if (!lokasiInput.toUpperCase().startsWith("SO ")) { lokasiInput = "SO " + lokasiInput; }
         
         let validSO = databaseSO.find(item => item.toLowerCase().trim() === lokasiInput.toLowerCase());
@@ -341,7 +277,7 @@
         try {
             let res = await fetch(URL_API, {
                 method: "POST",
-                body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, email, sandi })
+                body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, divisi, jabatan, email, sandi })
             });
             let data = await res.json();
             if(data.status === "SUCCESS") {
@@ -366,14 +302,17 @@
             let data = await res.json();
             
             if(data.status === "SUCCESS") {
-                userAktif = data.user; 
+                userAktif = data.user;
                 document.getElementById('bannerEmail').innerText = userAktif.email;
                 document.getElementById('bannerLokasi').innerText = userAktif.lokasi;
+                
+                // MENGISI DATA USER OTOMATIS DI FORM AMBIL BARANG
+                document.getElementById('formNama').value = userAktif.nama;
+                document.getElementById('formDivisi').value = userAktif.divisi || "-";
+                document.getElementById('formJabatan').value = userAktif.jabatan || "-";
+                
                 document.getElementById('formTanggal').valueAsDate = new Date();
-                
-                // PANGALIRAN TOKEN & LOKASI KE SERVER KETIKA MINTA DATA BARANG
                 await muatDataBarang(userAktif.token, userAktif.lokasi);
-                
                 document.getElementById('bodyTabelAtk').innerHTML = "";
                 tambahBarisTabel();
                 pindahPage('pageUtama');
@@ -384,15 +323,12 @@
 
     async function muatDataBarang(token, lokasi) {
         try {
-            // Mengirim token dan lokasi agar lolos enkripsi server berlapis lo
             let res = await fetch(`${URL_API}?target=barang&token=${encodeURIComponent(token)}&lokasi=${encodeURIComponent(lokasi)}`);
             let data = await res.json();
             if(data.status === "ERROR") {
                 alert(data.message);
                 logout();
-            } else {
-                databaseBarang = data;
-            }
+            } else { databaseBarang = data; }
         } catch(e) { console.error("Gagal unduh data barang", e); }
     }
 
@@ -441,7 +377,6 @@
         perbaruiCounterBaris();
     }
 
-    // FIX TOTAL: Memastikan teks gabungan Kategori dan Kode Barang muncul di input web
     function cariBarangTabel(id, val) {
         let div = document.getElementById(`suggest_${id}`);
         div.innerHTML = "";
@@ -457,7 +392,7 @@
             if (Array.isArray(item)) { return String(item[0]).toLowerCase().includes(kataKunci); }
             return false;
         });
-        
+
         if (hasil.length > 0) {
             div.style.display = "block";
             hasil.slice(0, 15).forEach(item => {
@@ -465,46 +400,34 @@
 
                 if (Array.isArray(item)) {
                     namaTampil = item[0] || "-";
-                    kodeTampil = item[1] || "-"; // Ini yang memuat "Stationery"
-                    // Ambil index 2, kalau kosong cari di index lainnya (antisipasi pergeseran array)
+                    kodeTampil = item[1] || "-"; 
                     kodeItemAsli = item[2] || item[4] || item[5] || ""; 
                     unitTampil = item[3] || "-";
                 } else {
                     namaTampil = item["Nama Item"] || item["Nama Barang"] || "-";
                     kodeTampil = item["Asset Code"] || item["Kategori"] || item["kategori"] || "-";
-                    // Antisipasi perbedaan key nama properti objek dari Apps Script lo
                     kodeItemAsli = item["Kode Item"] || item["Kode Barang"] || item["kode"] || "";
                     unitTampil = item["Unit"] || item["Satuan"] || "-";
                 }
 
                 let divItem = document.createElement('div');
                 divItem.className = 'suggestion-item';
-                
-                // Tampilan di dalam list dropdown melayang
                 divItem.innerHTML = `<strong>${namaTampil}</strong> <br><small style='color:#007bff; font-weight:bold;'>Asset: ${kodeTampil} | KB: ${kodeItemAsli || '-'}</small> <small style='color:#666;'>(${unitTampil})</small>`;
                 
                 divItem.onclick = () => {
                     document.getElementById(`namaBarang_${id}`).value = namaTampil;
-                    
-                    // 🔥 SOLUSI UTAMA: Gabungkan secara paksa teks Kategori dan Kodenya
-                    // Jika kodeItemAsli terdeteksi ada isinya dan bukan cuma strip
                     if (kodeItemAsli && kodeItemAsli !== "-" && kodeItemAsli !== "") {
                         document.getElementById(`kategori_${id}`).value = `${kodeTampil} / ${kodeItemAsli}`;
                     } else {
-                        // Backup plan: Kalau kodeItemAsli msh zonk, kita coba cek apakah ada data murni lain di data item
-                        let cadanganKode = (typeof item === 'object' && !Array.isArray(item)) ? 
-                                           (item["Kode Item"] || item["Kode Barang"]) : item[2];
-                        
+                        let cadanganKode = (typeof item === 'object' && !Array.isArray(item)) ? (item["Kode Item"] || item["Kode Barang"]) : item[2];
                         if (cadanganKode && cadanganKode !== "-") {
                             document.getElementById(`kategori_${id}`).value = `${kodeTampil} / ${cadanganKode}`;
-                            kodeItemAsli = cadanganKode; // isi ulang biar input hidden terisi
+                            kodeItemAsli = cadanganKode;
                         } else {
-                            // Kalau emang dari database aslinya gaada kode angka, tampilkan apa adanya
                             document.getElementById(`kategori_${id}`).value = kodeTampil;
                         }
                     }
-                    
-                    document.getElementById(`kode_${id}`).value = kodeItemAsli; // Tetap simpan kode asli murni di input hidden
+                    document.getElementById(`kode_${id}`).value = kodeItemAsli;
                     document.getElementById(`satuan_${id}`).value = unitTampil;
                     div.style.display = "none";
                 };
@@ -518,6 +441,7 @@
         const tanggal = document.getElementById('formTanggal').value;
         const alasan = document.getElementById('formAlasan').value.trim();
         const tbody = document.getElementById('bodyTabelAtk');
+
         if(!namaKaryawan) return alert("Harap isi nama karyawan yang mengambil barang!");
         if(!tanggal) return alert("Harap tentukan tanggal pengambilan!");
 
@@ -531,7 +455,7 @@
             let kodeBarang = document.getElementById(`kode_${rowId}`).value;
             let qtyBarang = document.getElementById(`qty_${rowId}`).value;
             let satuanBarang = document.getElementById(`satuan_${rowId}`).value;
-            
+
             if(!namaBarang || !kategoriBarang) {
                 barisValid = false;
                 break;
@@ -553,7 +477,7 @@
         toggleLoader(true);
         let payload = {
             fitur: "INPUT_LOG",
-            token: userAktif.token, // Kirim token keamanan lo
+            token: userAktif.token,
             namaKaryawan: namaKaryawan,
             lokasiSO: userAktif.lokasi,
             tanggal: tanggal,

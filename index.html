@@ -191,7 +191,7 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbzhvRU-p9bhHjI8fDZXIh4ZEsT4y_OrIYspJhkWmJhdCjpjyfcFpiJiiCUjqsl5wCZm/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbztTXUciF7pjp4Jls12OqwyuN9-aoLtvw20p5jJgG1UI7pbY4uVqw-2kZUdvn3Y63V9/exec";
     let databaseBarang = [];
     let databaseSO = [];
     let databaseDept = []; // Tempat menyimpan data sheet Dept
@@ -479,16 +479,18 @@
     
     async function kirimFormBarang() {
         const namaKaryawan = document.getElementById('formNama').value.trim();
+        const department = document.getElementById('formDepartment').value.trim(); // Ambil data Department
+        const divisi = document.getElementById('formDivisi').value.trim();         // Ambil data Divisi
         const tanggal = document.getElementById('formTanggal').value;
         const alasan = document.getElementById('formAlasan').value.trim();
         const tbody = document.getElementById('bodyTabelAtk');
-
+    
         if(!namaKaryawan) return alert("Harap isi nama karyawan yang mengambil barang!");
         if(!tanggal) return alert("Harap tentukan tanggal pengambilan!");
-
+    
         let kumpulanItem = [];
         let barisValid = true;
-
+    
         for (let i = 0; i < tbody.rows.length; i++) {
             let rowId = tbody.rows[i].id.split('_')[1];
             let namaBarang = document.getElementById(`namaBarang_${rowId}`).value.trim();
@@ -496,12 +498,12 @@
             let kodeBarang = document.getElementById(`kode_${rowId}`).value;
             let qtyBarang = document.getElementById(`qty_${rowId}`).value;
             let satuanBarang = document.getElementById(`satuan_${rowId}`).value;
-
+    
             if(!namaBarang || !kategoriBarang) {
                 barisValid = false;
                 break;
             }
-
+    
             kumpulanItem.push({
                 kategoriBarang: kategoriBarang,
                 kodeBarang: kodeBarang,
@@ -510,22 +512,26 @@
                 satuanBarang: satuanBarang
             });
         }
-
+    
         if(!barisValid || kumpulanItem.length === 0) {
             return alert("Ada baris item barang yang kosong atau tidak valid. Silakan periksa kembali!");
         }
-
+    
         toggleLoader(true);
+        
+        // PAYLOAD DATA YANG AKAN DIKIRIM KE APPS SCRIPT
         let payload = {
             fitur: "INPUT_LOG",
             token: userAktif.token,
             namaKaryawan: namaKaryawan,
             lokasiSO: userAktif.lokasi,
+            department: department, // Tambahan parameter department untuk dikirim
+            divisi: divisi,         // Tambahan parameter divisi untuk dikirim
             tanggal: tanggal,
             alasan: alasan,
             items: kumpulanItem
         };
-
+    
         try {
             let res = await fetch(URL_API, { method: "POST", body: JSON.stringify(payload) });
             let data = await res.json();

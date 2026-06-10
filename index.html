@@ -7,7 +7,7 @@
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; padding: 20px; color: #333; }
         .container { max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; transition: max-width 0.3s ease; }
-        .wide-container { max-width: 850px; }
+        .wide-container { max-width: 950px; } /* Diperlebar sedikit agar muat kolom alasan */
         h2 { text-align: center; color: #007bff; margin-top: 0; margin-bottom: 20px; }
         .page { display: none; }
         .active { display: block; }
@@ -32,13 +32,17 @@
         
         .table-responsive { width: 100%; overflow-x: visible; overflow-y: visible; margin-bottom: 35px; }
         table { width: 100%; border-collapse: collapse; overflow: visible !important; }
-        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; }
+        th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; }
         th { background-color: #f8f9fa; color: #333; }
         .btn-add-row { background: #28a745; margin-bottom: 0; width: auto; padding: 8px 15px; font-size: 14px; }
         .btn-add-row:hover { background: #218838; }
         .btn-del { background: #dc3545; padding: 6px 10px; font-size: 12px; margin-top: 0; width: auto; }
         .btn-del:hover { background: #bd2130; }
         
+        .checkbox-container { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; background: #f8f9fa; padding: 10px; border-radius: 5px; border: 1px dashed #007bff; }
+        .checkbox-container input { width: auto; cursor: pointer; }
+        .checkbox-container label { margin-bottom: 0; cursor: pointer; font-size: 14px; color: #007bff; }
+
         .loader-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); border-radius: 10px; z-index: 10000; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         .loader-text { font-weight: bold; color: #555; font-size: 15px; text-align: center; }
@@ -50,6 +54,7 @@
         .btn-success-back { background: #28a745; }
         .btn-success-back:hover { background: #218838; }
 
+        /* CSS RESPONSIVE KHUSUS LAYAR HP */
         @media screen and (max-width: 768px) {
             body { padding: 10px; }
             .container, .wide-container { max-width: 100% !important; padding: 15px; margin: 10px auto; }
@@ -60,11 +65,12 @@
             #bodyTabelAtk td:nth-child(2)::before { content: "Kategori / Kode:"; font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #495057; }
             #bodyTabelAtk td:nth-child(3)::before { content: "Jumlah (Qty):"; font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #495057; }
             #bodyTabelAtk td:nth-child(4)::before { content: "Satuan:"; font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #495057; }
-            #bodyTabelAtk td input { width: 100% !important; padding: 10px !important; font-size: 14px !important; }
-            #bodyTabelAtk td:nth-child(5) { text-align: right; margin-top: 8px; border-top: 1px dashed #ddd !important; padding-top: 10px !important; }
+            #bodyTabelAtk td:nth-child(5)::before { content: "Alasan Pengambilan:"; font-weight: bold; font-size: 13px; display: block; margin-bottom: 4px; color: #495057; }
+            #bodyTabelAtk td input, #bodyTabelAtk td textarea { width: 100% !important; padding: 10px !important; font-size: 14px !important; }
+            #bodyTabelAtk td:nth-child(6) { text-align: right; margin-top: 8px; border-top: 1px dashed #ddd !important; padding-top: 10px !important; }
             .btn-del { width: 100% !important; padding: 10px !important; font-size: 14px !important; }
             .autocomplete-suggestions { width: 100% !important; min-width: 100% !important; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
-            div[style*="display: flex"] { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+            .control-flex { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
             .btn-add-row, .badge-counter { width: 100% !important; text-align: center; justify-content: center; }
         }
     </style>
@@ -103,15 +109,6 @@
             <div id="soSuggestions" class="autocomplete-suggestions"></div>
         </div>
         <div class="form-group">
-            <label>Divisi</label>
-            <input type="text" id="regDivisi" oninput="cariDivisiRekomendasi(this.value)" placeholder="Ketik divisi (Contoh: inst...)" autocomplete="off">
-            <div id="divisiSuggestions" class="autocomplete-suggestions"></div>
-        </div>
-        <div class="form-group">
-            <label>Department</label>
-            <input type="text" id="regDepartment" class="readonly-bg" readonly placeholder="Otomatis terisi saat memilih divisi...">
-        </div>
-        <div class="form-group">
             <label>Akun Email</label>
             <input type="email" id="regEmail" placeholder="contoh@gmail.com">
         </div>
@@ -131,18 +128,7 @@
         
         <div class="form-group">
             <label>Nama Karyawan Yang Mengambil</label>
-            <input type="text" id="formNama" class="readonly-bg" readonly placeholder="Nama karyawan...">
-        </div>
-
-        <div style="display: flex; gap: 15px; margin-bottom: 0;">
-            <div class="form-group" style="flex: 1;">
-                <label>Department</label>
-                <input type="text" id="formDepartment" class="readonly-bg" readonly placeholder="Department...">
-            </div>
-            <div class="form-group" style="flex: 1;">
-                <label>Divisi</label>
-                <input type="text" id="formDivisi" class="readonly-bg" readonly placeholder="Divisi...">
-            </div>
+            <input type="text" id="formNama" placeholder="Ketik nama karyawan pengguna barang...">
         </div>
 
         <div class="form-group">
@@ -151,7 +137,13 @@
         </div>
 
         <h3 style="margin-top: 25px; margin-bottom: 10px; font-size: 16px; color:#333;">Daftar Item ATK / Supplies:</h3>
-        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+        
+        <div class="checkbox-container">
+            <input type="checkbox" id="chkSamaAlasan" onchange="toggleLogikaAlasanSamakan()">
+            <label for="chkSamaAlasan">Alasan untuk semua item sama</label>
+        </div>
+
+        <div class="control-flex" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
             <button type="button" class="btn-add-row" onclick="tambahBarisTabel()">+ Tambah Baris Item</button>
             <div id="hitungItemBadge" class="badge-counter">Jumlah Item: 1 / Max 10 Items</div>
         </div>
@@ -160,20 +152,16 @@
             <table id="tabelAtk">
                 <thead>
                     <tr>
-                        <th style="width: 45%;">Nama Barang</th>
-                        <th style="width: 20%;">Kategori / Kode</th>
-                        <th style="width: 12%;">Qty</th>
-                        <th style="width: 13%;">Satuan</th>
-                        <th style="width: 10%;">Aksi</th>
+                        <th style="width: 30%;">Nama Barang</th>
+                        <th style="width: 18%;">Kategori / Kode</th>
+                        <th style="width: 8%;">Qty</th>
+                        <th style="width: 10%;">Satuan</th>
+                        <th style="width: 26%;">Alasan Pengambilan</th>
+                        <th style="width: 8%;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="bodyTabelAtk"></tbody>
             </table>
-        </div>
-
-        <div class="form-group" style="margin-top: 20px;">
-            <label>Alasan Pengambilan (Untuk Semua Item)</label>
-            <textarea id="formAlasan" rows="3" placeholder="Alasan keperluan barang..."></textarea>
         </div>
         
         <button onclick="kirimFormBarang()">KIRIM SEMUA PERMINTAAN</button>
@@ -191,10 +179,9 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbztTXUciF7pjp4Jls12OqwyuN9-aoLtvw20p5jJgG1UI7pbY4uVqw-2kZUdvn3Y63V9/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbyTXJ0VNZOzt2Nh1eQrMdZFqhN7-3ZYdfP-JRR8yJIe15XoR168TCd-FA27TREVi6E6/exec";
     let databaseBarang = [];
     let databaseSO = [];
-    let databaseDept = []; // Tempat menyimpan data sheet Dept
     let userAktif = null;
     let indeksBaris = 0;
 
@@ -230,27 +217,11 @@
         } catch(e) { console.error("Gagal sinkronisasi data SO:", e); }
     }
 
-    // Ambil data sheet Dept saat pendaftaran dibuka
-    async function muatUlangDept() {
-        try {
-            let res = await fetch(`${URL_API}?target=dept`);
-            let txt = await res.text();
-            databaseDept = JSON.parse(txt);
-        } catch(e) { console.error("Gagal sinkronisasi data Dept:", e); }
-    }
-
-    async function bukaPageSignUp() {
+    function bukaPageSignUp() {
         pindahPage('pageSignUp');
         document.getElementById('regLokasi').value = "";
-        document.getElementById('regDivisi').value = "";
-        document.getElementById('regDepartment').value = "";
         document.getElementById('soSuggestions').style.display = "none";
-        document.getElementById('divisiSuggestions').style.display = "none";
-        
-        toggleLoader(true);
-        if(databaseSO.length === 0) await muatUlangSO();
-        if(databaseDept.length === 0) await muatUlangDept();
-        toggleLoader(false);
+        if(databaseSO.length === 0) { muatUlangSO(); }
     }
 
     function cariLokasiSO(val) {
@@ -275,40 +246,12 @@
         } else { div.style.display = "none"; }
     }
 
-    // FITUR REKOMENDASI DIVISI & OTOMATIS COCOKKAN DEPARTMENT
-    function cariDivisiRekomendasi(val) {
-        let div = document.getElementById('divisiSuggestions');
-        div.innerHTML = "";
-        if (!val || !val.trim()) { div.style.display = "none"; return; }
-
-        let kataKunci = val.toLowerCase().trim();
-        let hasil = databaseDept.filter(item => item && item.divisi && item.divisi.toLowerCase().includes(kataKunci));
-        
-        if (hasil.length > 0) {
-            div.style.display = "block";
-            hasil.slice(0, 5).forEach(item => {
-                let divItem = document.createElement('div');
-                divItem.className = 'suggestion-item';
-                divItem.innerHTML = `<strong>${item.divisi}</strong><br><small style="color: #666;">Dept: ${item.department}</small>`;
-                divItem.onclick = function() {
-                    document.getElementById('regDivisi').value = item.divisi;
-                    document.getElementById('regDepartment').value = item.department; // Otomatis mengisi kolom Department
-                    div.style.display = "none";
-                };
-                div.appendChild(divItem);
-            });
-        } else { div.style.display = "none"; }
-    }
-
     async function prosesSignUp() {
         const nama = document.getElementById('regNama').value.trim();
         let lokasiInput = document.getElementById('regLokasi').value.trim();
-        const divisi = document.getElementById('regDivisi').value.trim();
-        const department = document.getElementById('regDepartment').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const sandi = document.getElementById('regSandi').value.trim();
-        
-        if(!nama || !lokasiInput || !divisi || !department || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
+        if(!nama || !lokasiInput || !email || !sandi) return alert("Semua kolom registrasi wajib diisi!");
         if (!lokasiInput.toUpperCase().startsWith("SO ")) { lokasiInput = "SO " + lokasiInput; }
         
         let validSO = databaseSO.find(item => item.toLowerCase().trim() === lokasiInput.toLowerCase());
@@ -318,7 +261,7 @@
         try {
             let res = await fetch(URL_API, {
                 method: "POST",
-                body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, divisi, department, email, sandi })
+                body: JSON.stringify({ fitur: "SIGN_UP", nama, lokasi: validSO, email, sandi })
             });
             let data = await res.json();
             if(data.status === "SUCCESS") {
@@ -346,12 +289,6 @@
                 userAktif = data.user;
                 document.getElementById('bannerEmail').innerText = userAktif.email;
                 document.getElementById('bannerLokasi').innerText = userAktif.lokasi;
-                
-                // MENGISI DATA USER OTOMATIS DI FORM AMBIL BARANG
-                document.getElementById('formNama').value = userAktif.nama;
-                document.getElementById('formDepartment').value = userAktif.department || "-";
-                document.getElementById('formDivisi').value = userAktif.divisi || "-";
-                
                 document.getElementById('formTanggal').valueAsDate = new Date();
                 await muatDataBarang(userAktif.token, userAktif.lokasi);
                 document.getElementById('bodyTabelAtk').innerHTML = "";
@@ -386,7 +323,7 @@
         tr.style.overflow = "visible";
         tr.innerHTML = `
             <td style="position: relative; overflow: visible;">
-                <input type="text" id="namaBarang_${indeksBaris}" oninput="cariBarangTabel(${indeksBaris}, this.value)" placeholder="Ketik nama item..." autocomplete="off">
+                <input type="text" id="namaBarang_${indeksBaris}" oninput="cariBarangTabel(${indeksBaris}, this.value)" placeholder="Nama item..." autocomplete="off">
                 <div id="suggest_${indeksBaris}" class="autocomplete-suggestions"></div>
             </td>
             <td>
@@ -400,11 +337,17 @@
                 <input type="text" id="satuan_${indeksBaris}" class="readonly-bg" readonly placeholder="Satuan">
             </td>
             <td>
+                <textarea id="alasan_${indeksBaris}" rows="1" oninput="sinkronkanTeksAlasanMassal(this.value)" placeholder="Alasan item ini..."></textarea>
+            </td>
+            <td>
                 <button type="button" class="btn-del" onclick="hapusBarisTabel(${indeksBaris})">Hapus</button>
             </td>
         `;
         tbody.appendChild(tr);
         perbaruiCounterBaris();
+        
+        // Jalankan logika penyesuaian jika checkbox "Sama Alasan" sedang aktif centang
+        toggleLogikaAlasanSamakan();
     }
 
     function hapusBarisTabel(id) {
@@ -416,6 +359,51 @@
         const row = document.getElementById(`row_${id}`);
         if(row) row.remove();
         perbaruiCounterBaris();
+    }
+
+    // LOGIKA SINKRONISASI BILA CHECKBOX DICENTANG
+    function toggleLogikaAlasanSamakan() {
+        const isChecked = document.getElementById('chkSamaAlasan').checked;
+        const tbody = document.getElementById('bodyTabelAtk');
+        
+        if (tbody.rows.length === 0) return;
+        
+        // Ambil elemen textarea pada baris paling pertama sebagai acuan dasar master text
+        let idBarisPertama = tbody.rows[0].id.split('_')[1];
+        let teksMaster = document.getElementById(`alasan_${idBarisPertama}`).value;
+
+        for (let i = 0; i < tbody.rows.length; i++) {
+            let rowId = tbody.rows[i].id.split('_')[1];
+            let txtArea = document.getElementById(`alasan_${rowId}`);
+            
+            if (isChecked) {
+                if (i > 0) {
+                    txtArea.value = teksMaster; // Samakan isi teks baris bawah dengan baris ke-1
+                    txtArea.classList.add('readonly-bg');
+                    txtArea.readOnly = true; // Kunci baris selain baris ke-1
+                }
+            } else {
+                txtArea.classList.remove('readonly-bg');
+                txtArea.readOnly = false; // Buka kunci penguncian input kembali
+            }
+        }
+    }
+
+    // TRIGGER KETIKA USER MENGETIK DI BARIS PERTAMA SAAT CHECKBOX AKTIF
+    function sinkronkanTeksAlasanMassal(val) {
+        const isChecked = document.getElementById('chkSamaAlasan').checked;
+        const tbody = document.getElementById('bodyTabelAtk');
+        
+        if (isChecked && tbody.rows.length > 1) {
+            let idBarisPertama = tbody.rows[0].id.split('_')[1];
+            // Pastikan fungsi ini hanya berjalan merespons input dari baris pertama saja
+            if(document.activeElement.id === `alasan_${idBarisPertama}`) {
+                for (let i = 1; i < tbody.rows.length; i++) {
+                    let rowId = tbody.rows[i].id.split('_')[1];
+                    document.getElementById(`alasan_${rowId}`).value = val;
+                }
+            }
+        }
     }
 
     function cariBarangTabel(id, val) {
@@ -479,18 +467,16 @@
     
     async function kirimFormBarang() {
         const namaKaryawan = document.getElementById('formNama').value.trim();
-        const department = document.getElementById('formDepartment').value.trim(); // Ambil data Department
-        const divisi = document.getElementById('formDivisi').value.trim();         // Ambil data Divisi
         const tanggal = document.getElementById('formTanggal').value;
-        const alasan = document.getElementById('formAlasan').value.trim();
         const tbody = document.getElementById('bodyTabelAtk');
-    
+
         if(!namaKaryawan) return alert("Harap isi nama karyawan yang mengambil barang!");
         if(!tanggal) return alert("Harap tentukan tanggal pengambilan!");
-    
+
         let kumpulanItem = [];
         let barisValid = true;
-    
+        let alasanValid = true;
+
         for (let i = 0; i < tbody.rows.length; i++) {
             let rowId = tbody.rows[i].id.split('_')[1];
             let namaBarang = document.getElementById(`namaBarang_${rowId}`).value.trim();
@@ -498,45 +484,53 @@
             let kodeBarang = document.getElementById(`kode_${rowId}`).value;
             let qtyBarang = document.getElementById(`qty_${rowId}`).value;
             let satuanBarang = document.getElementById(`satuan_${rowId}`).value;
-    
+            let alasanBarang = document.getElementById(`alasan_${rowId}`).value.trim(); // Ambil data alasan per item
+
+            // Validasi nama barang & kategori wajib ada
             if(!namaBarang || !kategoriBarang) {
                 barisValid = false;
                 break;
             }
-    
+
+            // 🔥 VALIDASI WAJIB: Alasan tidak boleh dikosongkan sama sekali
+            if(!alasanBarang) {
+                alasanValid = false;
+                break;
+            }
+
             kumpulanItem.push({
                 kategoriBarang: kategoriBarang,
                 kodeBarang: kodeBarang,
                 namaBarang: namaBarang,
                 qtyBarang: qtyBarang,
-                satuanBarang: satuanBarang
+                satuanBarang: satuanBarang,
+                alasanBarang: alasanBarang // Masukkan alasan ke dalam objek array item
             });
         }
-    
+
         if(!barisValid || kumpulanItem.length === 0) {
             return alert("Ada baris item barang yang kosong atau tidak valid. Silakan periksa kembali!");
         }
-    
-        toggleLoader(true);
         
-        // PAYLOAD DATA YANG AKAN DIKIRIM KE APPS SCRIPT
+        if(!alasanValid) {
+            return alert("Gagal Upload! Alasan Pengambilan wajib diisi pada setiap item barang!");
+        }
+
+        toggleLoader(true);
         let payload = {
             fitur: "INPUT_LOG",
             token: userAktif.token,
             namaKaryawan: namaKaryawan,
             lokasiSO: userAktif.lokasi,
-            department: department, // Tambahan parameter department untuk dikirim
-            divisi: divisi,         // Tambahan parameter divisi untuk dikirim
             tanggal: tanggal,
-            alasan: alasan,
             items: kumpulanItem
         };
-    
+
         try {
             let res = await fetch(URL_API, { method: "POST", body: JSON.stringify(payload) });
             let data = await res.json();
             if(data.status === "SUCCESS") {
-                document.getElementById('formAlasan').value = "";
+                document.getElementById('chkSamaAlasan').checked = false;
                 pindahPage('pageSukses');
             } else { alert("Server gagal memproses: " + data.message); }
         } catch(e) { alert("Gagal mengirim laporan, cek koneksi."); }
@@ -564,10 +558,6 @@
         if(e.target && e.target.id !== "regLokasi") {
             const soDiv = document.getElementById('soSuggestions');
             if(soDiv) soDiv.style.display = "none";
-        }
-        if(e.target && e.target.id !== "regDivisi") {
-            const divDiv = document.getElementById('divisiSuggestions');
-            if(divDiv) divDiv.style.display = "none";
         }
     });
 </script>
